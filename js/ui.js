@@ -49,11 +49,26 @@ var UI = (function () {
     return '#' + ('000000' + color.toString(16)).slice(-6);
   }
 
+  // aclara colores oscuros para usarlos como texto sobre fondo oscuro
+  function colorLegible(color) {
+    var r = (color >> 16) & 255, g = (color >> 8) & 255, b = color & 255;
+    if (r * 0.299 + g * 0.587 + b * 0.114 < 90) {
+      r = Math.min(255, r + 110); g = Math.min(255, g + 110); b = Math.min(255, b + 110);
+    }
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+
   // ---------- render de cartas ----------
   function statsHTML(c) {
+    function bar(label, key, val) {
+      var pct = Math.round(val / 99 * 100);
+      return '<div class="stat-row"><span class="stat-label">' + label + '</span>' +
+        '<span class="stat-bar bar-' + key + '"><i style="width:' + pct + '%"></i></span>' +
+        '<b class="stat-val">' + val + '</b></div>';
+    }
     return '<div class="card-stats">' +
-      '<span>ATQ <b>' + c.stats.atq + '</b></span><span>DEF <b>' + c.stats.def + '</b></span>' +
-      '<span>PAS <b>' + c.stats.pas + '</b></span><span>VEL <b>' + c.stats.vel + '</b></span>' +
+      bar('ATQ', 'atq', c.stats.atq) + bar('DEF', 'def', c.stats.def) +
+      bar('PAS', 'pas', c.stats.pas) + bar('VEL', 'vel', c.stats.vel) +
       '</div>';
   }
 
@@ -72,10 +87,12 @@ var UI = (function () {
   function cartaDOM(c, opciones) {
     opciones = opciones || {};
     var d;
+    var retrato = '<div class="card-face"><img class="pixel-sprite" src="' + Sprite.avatar(c) + '" alt=""></div>';
     if (c.type === 'staff') {
       d = el('div', 'card staff-card rarity-' + c.rareza);
       d.innerHTML =
         '<div class="card-top"><span class="card-pos">STAFF</span><span class="staff-icon">' + c.icono + '</span></div>' +
+        retrato +
         '<div class="card-name">' + c.nombre + '</div>' +
         '<div class="staff-desc">' + c.desc + '</div>' +
         '<div class="card-footer"><span>💰 ' + c.salario + '/j</span></div>';
@@ -84,6 +101,7 @@ var UI = (function () {
       d.innerHTML =
         '<div class="card-top"><span class="card-pos pos-' + c.pos + '">' + c.pos + '</span>' +
         '<span class="card-media">' + c.media + '</span></div>' +
+        retrato +
         '<div class="card-name">' + c.nombre + '</div>' +
         '<div class="card-tag">' + tagIcono(c.tag) + '</div>' +
         statsHTML(c) + habsHTML(c) +
@@ -122,7 +140,7 @@ var UI = (function () {
     var peligro = rival.rating >= 76 ? '🔴' : rival.rating >= 66 ? '🟠' : '🟢';
     $('#mg-next-rival').innerHTML =
       (jefe ? '<span class="boss-label">' + jefe + '</span> ' : '') +
-      'Próximo rival: <b style="color:' + colorHex(rival.color) + '">' + rival.nombre + '</b> ' +
+      'Próximo rival: <b style="color:' + colorLegible(rival.color) + '">' + rival.nombre + '</b> ' +
       '(' + (p.esLocal ? 'casa' : 'fuera') + ') · Nivel ' + rival.rating + ' ' + peligro +
       (jefe ? ' · <span class="boss-hint">botín de rareza alta garantizado</span>' : '');
     $('#mg-next-rival').classList.toggle('es-jefe', !!jefe);
@@ -158,10 +176,10 @@ var UI = (function () {
       var carta = State.cartaPorId(run.alineacion[i]);
       if (carta) {
         slot.classList.add('ocupado', 'rarity-' + carta.rareza);
-        slot.innerHTML = '<span class="slot-media">' + carta.media + '</span>' +
-          '<span class="slot-name">' + carta.nombre.split(' ')[1] + '</span>' +
-          '<span class="slot-pos">' + pos + '</span>';
-        slot.title = carta.nombre + ' — clic para retirar del once';
+        slot.innerHTML = '<img class="pixel-sprite slot-sprite" src="' + Sprite.avatar(carta) + '" alt="">' +
+          '<span class="slot-media">' + carta.media + '</span>' +
+          '<span class="slot-name">' + carta.nombre.split(' ')[1] + '</span>';
+        slot.title = carta.nombre + ' (' + pos + ') — clic para retirar del once';
       } else {
         slot.innerHTML = '<span class="slot-pos-empty">' + pos + '</span>';
       }

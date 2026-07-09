@@ -21,7 +21,8 @@ Abre `index.html` en un navegador (o sirve la carpeta con `python3 -m http.serve
 | Staff | 3 slots, 8 cartas distintas con efectos globales de run (Ojeador, Preparador, Agente, Mecenas, Táctico, Motivador, Cazatalentos, Economista) |
 | Economía | Oro por victorias/objetivos/ventas; salarios que drenan cada jornada; tienda con reroll pagando |
 | Negociación | Minijuego de oferta/contraoferta contra una IA con paciencia y precio de reserva ocultos (compra y venta) |
-| Partido | Simulación tick-based en Phaser (~65 s a x1, controles x1/x2/x4 y skip), con eventos, partículas, shake y activación visible de habilidades |
+| Partido | Simulación posicional en Phaser: 22 jugadores con movimiento táctico según posesión/zona, balón pegado al portador, pases al hueco con desmarques, presión defensiva, tiros con estirada del portero, partículas, shake y activación visible de habilidades (x1/x2/x4 y skip) |
+| Sprites | Retratos pixel-art procedurales y deterministas por jugador (canvas, sin assets externos) |
 | Meta | Récord de runs/títulos en localStorage |
 
 ### Estructura
@@ -29,6 +30,7 @@ Abre `index.html` en un navegador (o sirve la carpeta con `python3 -m http.serve
 ```
 index.html         Pantallas y layout
 css/style.css      UI dark estilo Balatro (tweens, glow por rareza, flip 3D)
+js/sprite.js       Retratos pixel-art procedurales (canvas)
 js/gen.js          Generación procedural (nombres, equipos, cartas, staff, drops)
 js/synergy.js      Sinergias por tag + stats efectivos (habilidades/staff)
 js/engine.js       Motor de partido tick-based, independiente del render
