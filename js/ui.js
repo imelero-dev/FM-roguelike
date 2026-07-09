@@ -670,6 +670,7 @@ var UI = (function () {
         $$('.tab-panel').forEach(function (x) { x.classList.remove('active'); });
         t.classList.add('active');
         $('#' + t.dataset.tab).classList.add('active');
+        $('.manage-body').scrollTop = 0;
       };
     });
   }

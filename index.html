@@ -2,10 +2,24 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Rogue Manager — Football Roguelike</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>⚽</text></svg>">
+<script>
+// Detección de móvil antes de pintar nada: activa la UI táctil.
+// Forzable con ?mobile=1 / ?mobile=0 para probar.
+(function () {
+  var force = /[?&]mobile=1/.test(location.search) ? true
+            : /[?&]mobile=0/.test(location.search) ? false : null;
+  var tactil = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  var pequeno = Math.min(screen.width, screen.height) <= 820;
+  var ua = /Android|iPhone|iPad|iPod|Windows Phone|Mobile/i.test(navigator.userAgent);
+  window.IS_MOBILE = force !== null ? force : (tactil && (pequeno || ua));
+  if (window.IS_MOBILE) document.documentElement.classList.add('is-mobile');
+})();
+</script>
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/mobile.css">
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
 <script>
 // Fallback local si el CDN no está disponible (permite jugar offline)
@@ -119,6 +133,7 @@ if (!window.Phaser) document.write('<script src="lib/phaser.min.js"><\/script>')
         <button id="btn-skip" class="btn btn-small">⏭ Saltar</button>
       </div>
     </div>
+    <div id="rotate-hint">🔄 Gira el móvil para ver el partido en grande</div>
     <div id="phaser-container"></div>
     <div id="match-feed" class="match-feed"></div>
   </div>
@@ -154,7 +169,9 @@ if (!window.Phaser) document.write('<script src="lib/phaser.min.js"><\/script>')
       <div id="nego-log" class="nego-log"></div>
       <div id="nego-rounds" class="nego-rounds"></div>
       <div class="nego-offer-row">
+        <button id="nego-minus" class="btn btn-small nego-step">−</button>
         <input type="range" id="nego-slider" min="0" max="100" value="50">
+        <button id="nego-plus" class="btn btn-small nego-step">+</button>
         <span id="nego-offer-value" class="gold-chip">💰 0</span>
       </div>
       <div class="nego-buttons">
@@ -190,6 +207,7 @@ if (!window.Phaser) document.write('<script src="lib/phaser.min.js"><\/script>')
 <script src="js/economy.js"></script>
 <script src="js/nego.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/mobile.js"></script>
 <script src="js/match.js"></script>
 <script src="js/main.js"></script>
 </body>

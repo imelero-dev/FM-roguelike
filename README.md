@@ -23,14 +23,17 @@ Abre `index.html` en un navegador (o sirve la carpeta con `python3 -m http.serve
 | Negociación | Minijuego de oferta/contraoferta contra una IA con paciencia y precio de reserva ocultos (compra y venta) |
 | Partido | Simulación posicional en Phaser: 22 jugadores con movimiento táctico según posesión/zona, balón pegado al portador, pases al hueco con desmarques, presión defensiva, tiros con estirada del portero, partículas, shake y activación visible de habilidades (x1/x2/x4 y skip) |
 | Sprites | Retratos pixel-art procedurales y deterministas por jugador (canvas, sin assets externos) |
+| UI móvil | Detección automática de dispositivo táctil: barra de navegación inferior tipo app con el botón de jugar, banquillo en tira deslizable, modales bottom-sheet y controles −/+ en la negociación (forzable con `?mobile=1` / `?mobile=0`) |
 | Meta | Récord de runs/títulos en localStorage |
 
 ### Estructura
 
 ```
-index.html         Pantallas y layout
+index.html         Pantallas y layout (+ detector de móvil)
 css/style.css      UI dark estilo Balatro (tweens, glow por rareza, flip 3D)
+css/mobile.css     Capa móvil: barra inferior, bottom-sheets, targets táctiles
 js/sprite.js       Retratos pixel-art procedurales (canvas)
+js/mobile.js       Reestructura la UI para táctil (nav inferior, steppers)
 js/gen.js          Generación procedural (nombres, equipos, cartas, staff, drops)
 js/synergy.js      Sinergias por tag + stats efectivos (habilidades/staff)
 js/engine.js       Motor de partido tick-based, independiente del render
