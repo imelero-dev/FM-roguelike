@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rogue Manager — Football Roguelike</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>⚽</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+<script>
+// Fallback local si el CDN no está disponible (permite jugar offline)
+if (!window.Phaser) document.write('<script src="lib/phaser.min.js"><\/script>');
+</script>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ MENÚ PRINCIPAL ============ -->
+  <div id="screen-menu" class="screen active">
+    <div class="menu-bg"></div>
+    <div class="menu-content">
+      <h1 class="game-title">⚽ ROGUE<span>MANAGER</span></h1>
+      <p class="tagline">Una temporada. Una oportunidad. Sé campeón o desaparece.</p>
+      <div class="menu-buttons">
+        <button id="btn-new-run" class="btn btn-big btn-gold">NUEVA RUN</button>
+        <button id="btn-how" class="btn btn-ghost">¿Cómo se juega?</button>
+        <button id="btn-mute" class="btn btn-ghost btn-small">🔊 Sonido</button>
+      </div>
+      <div id="meta-stats" class="meta-stats"></div>
+    </div>
+    <div id="how-panel" class="how-panel hidden">
+      <h3>Cómo se juega</h3>
+      <ul>
+        <li>🏆 <b>Objetivo:</b> quedar campeón de una liga de 8 equipos en 14 jornadas.</li>
+        <li>💀 <b>Derrota:</b> 3 derrotas seguidas o no ser campeón al final.</li>
+        <li>🃏 <b>Cartas:</b> tu plantilla son cartas de jugador con stats y habilidades. Alinea 11 en 4-3-3.</li>
+        <li>✨ <b>Sinergias:</b> alinea jugadores con el mismo tag (Cantera, Galáctico, Físico, Técnico) para activar bonos de equipo.</li>
+        <li>🧠 <b>Staff:</b> hasta 3 cartas de staff con efectos globales de run.</li>
+        <li>💰 <b>Economía:</b> gana oro con victorias y ventas. Paga salarios cada jornada. Compra en la tienda negociando el precio.</li>
+        <li>🔥 <b>Partidos jefe</b> (jornadas 5, 10 y 14): rivales potenciados, botín garantizado de rareza alta.</li>
+      </ul>
+      <button id="btn-how-close" class="btn">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- ============ GESTIÓN PRE-PARTIDO ============ -->
+  <div id="screen-manage" class="screen">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span id="mg-team-name" class="team-badge"></span>
+        <span id="mg-jornada" class="jornada-chip"></span>
+      </div>
+      <div class="topbar-right">
+        <span id="mg-gold" class="gold-chip">💰 0</span>
+        <span id="mg-salary" class="salary-chip">📉 0/jornada</span>
+        <button id="btn-play-match" class="btn btn-gold">JUGAR PARTIDO ▶</button>
+      </div>
+    </header>
+    <div id="mg-next-rival" class="next-rival"></div>
+    <nav class="tabs">
+      <button class="tab active" data-tab="tab-lineup">Alineación</button>
+      <button class="tab" data-tab="tab-shop">Tienda</button>
+      <button class="tab" data-tab="tab-staff">Staff</button>
+      <button class="tab" data-tab="tab-league">Liga</button>
+    </nav>
+    <main class="manage-body">
+      <section id="tab-lineup" class="tab-panel active">
+        <div class="lineup-layout">
+          <div class="pitch-mini" id="pitch-mini"></div>
+          <div class="side-panel">
+            <div id="synergy-panel" class="synergy-panel"></div>
+            <h4 class="panel-title">Banquillo / Plantilla <span id="squad-count"></span>
+              <button id="btn-auto-lineup" class="btn btn-tiny">🪄 Auto-alinear</button>
+            </h4>
+            <div id="bench-list" class="bench-list"></div>
+            <p class="hint">Haz clic en una carta y luego en una posición del campo para alinearla. Clic en «Vender» para negociar su venta.</p>
+          </div>
+        </div>
+      </section>
+      <section id="tab-shop" class="tab-panel">
+        <div class="shop-header">
+          <h3>🏪 Mercado de fichajes</h3>
+          <button id="btn-reroll" class="btn">🎲 Reroll</button>
+        </div>
+        <div id="shop-cards" class="shop-cards"></div>
+      </section>
+      <section id="tab-staff" class="tab-panel">
+        <h3>🧠 Cuerpo técnico <span class="muted">(máx. 3)</span></h3>
+        <div id="staff-list" class="staff-list"></div>
+      </section>
+      <section id="tab-league" class="tab-panel">
+        <div class="league-layout">
+          <div>
+            <h3>📊 Clasificación</h3>
+            <table id="league-table" class="league-table"></table>
+          </div>
+          <div>
+            <h3>📅 Calendario</h3>
+            <div id="calendar" class="calendar"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ============ PARTIDO ============ -->
+  <div id="screen-match" class="screen">
+    <div class="match-hud">
+      <div class="scoreboard">
+        <span id="sb-home" class="sb-team"></span>
+        <span id="sb-score" class="sb-score">0 - 0</span>
+        <span id="sb-away" class="sb-team"></span>
+      </div>
+      <div class="match-controls">
+        <span id="sb-minute" class="sb-minute">0'</span>
+        <button class="btn btn-small speed-btn active" data-speed="1">x1</button>
+        <button class="btn btn-small speed-btn" data-speed="2">x2</button>
+        <button class="btn btn-small speed-btn" data-speed="4">x4</button>
+        <button id="btn-skip" class="btn btn-small">⏭ Saltar</button>
+      </div>
+    </div>
+    <div id="phaser-container"></div>
+    <div id="match-feed" class="match-feed"></div>
+  </div>
+
+  <!-- ============ POST-PARTIDO ============ -->
+  <div id="screen-post" class="screen">
+    <div class="post-content">
+      <h2 id="post-result-title"></h2>
+      <div id="post-score" class="post-score"></div>
+      <div id="post-gold" class="post-gold"></div>
+      <div id="post-other-results" class="post-other"></div>
+      <h3 id="post-drop-title" class="drop-title">🎁 Elige tu recompensa</h3>
+      <div id="drop-cards" class="drop-cards"></div>
+      <button id="btn-post-continue" class="btn btn-gold hidden">Continuar ▶</button>
+    </div>
+  </div>
+
+  <!-- ============ FIN DE RUN ============ -->
+  <div id="screen-end" class="screen">
+    <div class="end-content">
+      <h1 id="end-title"></h1>
+      <p id="end-reason" class="end-reason"></p>
+      <div id="end-stats" class="end-stats"></div>
+      <button id="btn-end-menu" class="btn btn-big btn-gold">Volver al menú</button>
+    </div>
+  </div>
+
+  <!-- ============ MODAL NEGOCIACIÓN ============ -->
+  <div id="nego-modal" class="modal hidden">
+    <div class="modal-box">
+      <h3 id="nego-title"></h3>
+      <div id="nego-card-preview"></div>
+      <div id="nego-log" class="nego-log"></div>
+      <div id="nego-rounds" class="nego-rounds"></div>
+      <div class="nego-offer-row">
+        <input type="range" id="nego-slider" min="0" max="100" value="50">
+        <span id="nego-offer-value" class="gold-chip">💰 0</span>
+      </div>
+      <div class="nego-buttons">
+        <button id="nego-btn-offer" class="btn btn-gold">Ofertar</button>
+        <button id="nego-btn-accept" class="btn hidden">Aceptar contraoferta</button>
+        <button id="nego-btn-walk" class="btn btn-ghost">Retirarse</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MODAL GENÉRICO / CONFIRM ============ -->
+  <div id="confirm-modal" class="modal hidden">
+    <div class="modal-box">
+      <p id="confirm-text"></p>
+      <div class="nego-buttons">
+        <button id="confirm-yes" class="btn btn-gold">Sí</button>
+        <button id="confirm-no" class="btn btn-ghost">No</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+</div>
+
+<script src="js/audio.js"></script>
+<script src="js/gen.js"></script>
+<script src="js/synergy.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/state.js"></script>
+<script src="js/league.js"></script>
+<script src="js/economy.js"></script>
+<script src="js/nego.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/match.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
