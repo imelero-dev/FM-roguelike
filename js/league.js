@@ -1,5 +1,6 @@
 /* ============================================================
-   LEAGUE — clasificación, resultados de jornada y condiciones de fin
+   LEAGUE — clasificación, jornadas (los partidos IA vs IA se
+   juegan con el motor real), pichichi y condiciones de fin.
    ============================================================ */
 
 var League = (function () {
@@ -15,29 +16,47 @@ var League = (function () {
     else { h.pe++; a.pe++; h.pts++; a.pts++; }
   }
 
-  // Simula el resto de partidos de la jornada (instantáneo) y registra todo.
-  // resultadoJugador: {gh, ga} del partido del jugador ya disputado.
+  function anotarGoleador(nombre, equipoIdx, goles) {
+    var run = State.run;
+    if (!run.pichichi[nombre]) run.pichichi[nombre] = { goles: 0, equipo: equipoIdx };
+    run.pichichi[nombre].goles += goles;
+  }
+
+  // Simula el resto de la jornada con el motor real y registra todo.
+  // resultadoJugador: {gh, ga, goleadores: [{team, nombre}]} — team 0 = jugador
   function cerrarJornada(resultadoJugador) {
     var run = State.run;
     var ronda = run.calendario[run.jornada - 1];
+    var p = State.partidoDelJugador(run.jornada);
     var resultados = [];
-    ronda.forEach(function (p) {
-      var esDelJugador = p[0] === 0 || p[1] === 0;
+
+    ronda.forEach(function (par) {
+      var esDelJugador = par[0] === 0 || par[1] === 0;
       var gh, ga;
       if (esDelJugador) {
         gh = resultadoJugador.gh; ga = resultadoJugador.ga;
       } else {
-        var r = Engine.simInstantanea(run.equipos[p[0]].rating, run.equipos[p[1]].rating);
-        gh = r[0]; ga = r[1];
+        var r = Engine.simRapida(run.equipos[par[0]], run.equipos[par[1]]);
+        gh = r.gf; ga = r.gc;
+        r.goleadores.forEach(function (g) {
+          anotarGoleador(g.nombre, g.team === 0 ? par[0] : par[1], 1);
+        });
       }
-      aplicarResultado(p[0], p[1], gh, ga);
-      resultados.push({ h: p[0], a: p[1], gh: gh, ga: ga, jugador: esDelJugador });
+      aplicarResultado(par[0], par[1], gh, ga);
+      resultados.push({ h: par[0], a: par[1], gh: gh, ga: ga, jugador: esDelJugador });
     });
+
+    // goleadores del partido del jugador (team 0 = jugador, 1 = rival)
+    var rivalIdx = p.esLocal ? p.away : p.home;
+    (resultadoJugador.goleadores || []).forEach(function (g) {
+      anotarGoleador(g.nombre, g.team === 0 ? 0 : rivalIdx, 1);
+    });
+
     run.resultados.push(resultados);
 
-    // Los rivales mejoran ligeramente con la temporada (presión creciente)
+    // los rivales mejoran ligeramente con la temporada
     run.equipos.forEach(function (e) {
-      if (!e.esJugador && RNG.chance(0.35)) e.rating = Math.min(88, e.rating + 1);
+      if (!e.esJugador && RNG.chance(0.35)) e.rating = Math.min(80, e.rating + 1);
     });
     return resultados;
   }
@@ -52,6 +71,13 @@ var League = (function () {
     });
   }
 
+  function pichichi(n) {
+    var run = State.run;
+    return Object.keys(run.pichichi).map(function (nombre) {
+      return { nombre: nombre, goles: run.pichichi[nombre].goles, equipo: run.equipos[run.pichichi[nombre].equipo] };
+    }).sort(function (a, b) { return b.goles - a.goles; }).slice(0, n || 6);
+  }
+
   function puestoJugador() {
     var tabla = clasificacion();
     for (var i = 0; i < tabla.length; i++) {
@@ -60,8 +86,6 @@ var League = (function () {
     return 8;
   }
 
-  // Comprueba fin de run tras cerrar una jornada.
-  // Devuelve null si continúa, o {victoria, razon, puesto}
   function comprobarFin() {
     var run = State.run;
     var puesto = puestoJugador();
@@ -83,7 +107,10 @@ var League = (function () {
   return {
     cerrarJornada: cerrarJornada,
     clasificacion: clasificacion,
+    pichichi: pichichi,
     puestoJugador: puestoJugador,
     comprobarFin: comprobarFin
   };
 })();
+
+if (typeof module !== 'undefined') module.exports = League;

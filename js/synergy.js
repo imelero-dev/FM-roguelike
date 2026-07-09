@@ -1,140 +1,150 @@
 /* ============================================================
-   SYNERGY — sinergias por tag y aplicación de bonos de equipo
+   SYNERGY — sinergias por tag, habilidades pasivas, staff,
+   forma y moral aplicados como bonos de ATRIBUTO. Devuelve
+   los atributos efectivos que consume el motor de partido.
    ============================================================ */
 
 var Synergy = (function () {
 
-  // Definición de sinergias: umbrales -> bonos
+  var OFENSIVOS = ['remate', 'regate', 'desmarque', 'compostura', 'tirosLejanos', 'primerToque', 'tecnica', 'vision'];
+  var MENTALES = ['agresividad', 'anticipacion', 'compostura', 'concentracion', 'decisiones', 'desmarque', 'colocacion', 'liderazgo', 'vision', 'sacrificio'];
+
   var SINERGIAS = {
     'Cantera': {
       icono: '🌱',
       niveles: [
-        { n: 3, desc: '+7 a todos los stats de los jugadores Cantera', apply: function (ctx) { ctx.bonusTagAll['Cantera'] = 7; } },
-        { n: 5, desc: '+14 a todos los stats de los jugadores Cantera', apply: function (ctx) { ctx.bonusTagAll['Cantera'] = 14; } }
-      ]
+        { n: 3, desc: '+1 a TODOS los atributos de los jugadores Cantera' },
+        { n: 5, desc: '+2 a TODOS los atributos de los jugadores Cantera' }
+      ],
+      aplicar: function (nivel, ctx) { ctx.porTag['Cantera'] = nivel; }
     },
     'Galáctico': {
       icono: '🌟',
       niveles: [
-        { n: 2, desc: '+8 ataque a todo el equipo', apply: function (ctx) { ctx.bonusEquipo.atq += 8; } },
-        { n: 4, desc: '+16 ataque a todo el equipo', apply: function (ctx) { ctx.bonusEquipo.atq += 8; } }
-      ]
+        { n: 2, desc: '+1 Remate, Regate, Técnica y Desmarque a todo el equipo' },
+        { n: 4, desc: '+2 Remate, Regate, Técnica y Desmarque a todo el equipo' }
+      ],
+      aplicar: function (nivel, ctx) {
+        ['remate', 'regate', 'tecnica', 'desmarque'].forEach(function (a) { ctx.equipo[a] = (ctx.equipo[a] || 0) + nivel; });
+      }
     },
     'Físico': {
       icono: '💪',
       niveles: [
-        { n: 3, desc: '+10 velocidad a todo el equipo', apply: function (ctx) { ctx.bonusEquipo.vel += 10; } },
-        { n: 5, desc: '+18 velocidad a todo el equipo', apply: function (ctx) { ctx.bonusEquipo.vel += 8; } }
-      ]
+        { n: 3, desc: '+1 Velocidad, Aceleración, Fuerza y Resistencia a todo el equipo' },
+        { n: 5, desc: '+2 Velocidad, Aceleración, Fuerza y Resistencia a todo el equipo' }
+      ],
+      aplicar: function (nivel, ctx) {
+        ['velocidad', 'aceleracion', 'fuerza', 'resistencia'].forEach(function (a) { ctx.equipo[a] = (ctx.equipo[a] || 0) + nivel; });
+      }
     },
     'Técnico': {
       icono: '🎩',
       niveles: [
-        { n: 3, desc: '+10 pase a todo el equipo', apply: function (ctx) { ctx.bonusEquipo.pas += 10; } },
-        { n: 5, desc: '+18 pase a todo el equipo', apply: function (ctx) { ctx.bonusEquipo.pas += 8; } }
-      ]
+        { n: 3, desc: '+1 Pase, Primer toque, Visión y Técnica a todo el equipo' },
+        { n: 5, desc: '+2 Pase, Primer toque, Visión y Técnica a todo el equipo' }
+      ],
+      aplicar: function (nivel, ctx) {
+        ['pase', 'primerToque', 'vision', 'tecnica'].forEach(function (a) { ctx.equipo[a] = (ctx.equipo[a] || 0) + nivel; });
+      }
     }
   };
 
-  // Cuenta tags en el once y devuelve estado de sinergias
   function evaluar(lineup) {
     var counts = {};
     lineup.forEach(function (c) {
       if (!c) return;
       counts[c.tag] = (counts[c.tag] || 0) + 1;
     });
-    var resultado = [];
-    Object.keys(SINERGIAS).forEach(function (tag) {
+    return Object.keys(SINERGIAS).map(function (tag) {
       var def = SINERGIAS[tag];
       var count = counts[tag] || 0;
       var activos = def.niveles.filter(function (nv) { return count >= nv.n; });
-      resultado.push({
+      return {
         tag: tag,
         icono: def.icono,
         count: count,
         siguiente: def.niveles.filter(function (nv) { return count < nv.n; })[0] || null,
         activos: activos
-      });
+      };
     });
-    return resultado;
   }
 
-  // Construye stats efectivos del once aplicando sinergias, staff y habilidades pasivas.
-  // Devuelve { jugadores: [{card, eff:{atq,def,pas,vel}}], hooks: {...}, sinergias }
+  // Construye los atributos efectivos del once.
+  // opts: { esJefe, debuff, moral (20-95), staffKeys }
+  // Devuelve { jugadores: [{card, attrs, habs}], sinergias, castList }
   function aplicar(lineup, staff, opts) {
     opts = opts || {};
-    var ctx = { bonusEquipo: { atq: 0, def: 0, pas: 0, vel: 0 }, bonusTagAll: {} };
+    var ctx = { equipo: {}, porTag: {} };
     var sinergias = evaluar(lineup);
     sinergias.forEach(function (s) {
-      s.activos.forEach(function (nv) { nv.apply(ctx); });
+      if (!s.activos.length) return;
+      var nivel = s.activos.length; // 1 o 2 según umbral alcanzado
+      SINERGIAS[s.tag].aplicar(nivel, ctx);
     });
 
     var staffKeys = (staff || []).map(function (s) { return s.key; });
-
-    // Staff pasivo de partido
-    if (staffKeys.indexOf('pizarra') >= 0) { ctx.bonusEquipo.pas += 6; ctx.bonusEquipo.def += 6; }
-    if (opts.esJefe && staffKeys.indexOf('motivador') >= 0) {
-      ctx.bonusEquipo.atq += 8; ctx.bonusEquipo.def += 8; ctx.bonusEquipo.pas += 8; ctx.bonusEquipo.vel += 8;
+    if (staffKeys.indexOf('pizarra') >= 0) ctx.equipo.colocacion = (ctx.equipo.colocacion || 0) + 1;
+    if (staffKeys.indexOf('motivador') >= 0) {
+      var m = opts.esJefe ? 2 : 1;
+      ctx.equipo.compostura = (ctx.equipo.compostura || 0) + m;
+      ctx.equipo.concentracion = (ctx.equipo.concentracion || 0) + m;
     }
 
-    // Habilidades pasivas globales
-    var flat = 0;
-    var hooks = {
-      muroZona: 0,        // reducción prob. gol rival
-      cerrojo: 0,
-      motorPase: 0,       // % extra de pase
-      velocistaAvance: 0, // % extra de avance
-      francotirador: 0,   // % extra de ocasión
-      clutchIds: [],      // jugadores con clutch
-      killerIds: {},      // id -> true
-      abilityCast: []     // eventos de activación para feedback visual al inicio
-    };
-
+    // habilidades que afectan a todo el equipo + lista de "casts" visuales
+    var castList = [];
+    var capitanes = 0;
     lineup.forEach(function (c) {
       if (!c) return;
-      (c.habilidades || []).forEach(function (h) {
-        if (h === 'capitan') { flat += 4; hooks.abilityCast.push({ card: c, hab: 'capitan' }); }
-        if (h === 'muro') hooks.muroZona += 0.15;
-        if (h === 'cerrojo' && c.pos === 'POR') hooks.cerrojo += 0.12;
-        if (h === 'motor' && c.pos === 'MED') { hooks.motorPase += 0.10; hooks.abilityCast.push({ card: c, hab: 'motor' }); }
-        if (h === 'velocista') hooks.velocistaAvance += 0.08;
-        if (h === 'francotirador') hooks.francotirador += 0.15;
-        if (h === 'clutch') hooks.clutchIds.push(c.id);
-        if (h === 'killer') hooks.killerIds[c.id] = true;
-      });
+      if (c.habilidades.indexOf('capitan') >= 0) { capitanes++; castList.push({ card: c, hab: 'capitan' }); }
+      if (c.habilidades.indexOf('motor') >= 0) castList.push({ card: c, hab: 'motor' });
     });
-    hooks.muroZona = Math.min(0.35, hooks.muroZona);
-    ctx.bonusEquipo.atq += flat; ctx.bonusEquipo.def += flat;
-    ctx.bonusEquipo.pas += flat; ctx.bonusEquipo.vel += flat;
+    if (capitanes) {
+      ctx.equipo.compostura = (ctx.equipo.compostura || 0) + capitanes;
+      ctx.equipo.decisiones = (ctx.equipo.decisiones || 0) + capitanes;
+    }
 
-    // Stat efectivo por jugador
-    var maxAtq = -1, maxAtqId = null;
-    lineup.forEach(function (c) {
-      if (c && c.stats.atq > maxAtq) { maxAtq = c.stats.atq; maxAtqId = c.id; }
-    });
+    var moralBonus = opts.moral !== undefined ? (opts.moral - 60) / 25 : 0; // ±1.4 mental
+    var debuff = opts.debuff || 0;
 
     var jugadores = lineup.map(function (c) {
       if (!c) return null;
-      var tagBonus = ctx.bonusTagAll[c.tag] || 0;
-      var jefeBonus = (opts.esJefe && c.habilidades.indexOf('fajador') >= 0) ? 12 : 0;
-      var estrella = (c.habilidades.indexOf('estrella') >= 0 && c.id === maxAtqId) ? 10 : 0;
-      var debuff = opts.debuff || 0;
-      function eff(base, extra) {
-        return Math.max(10, Math.min(120, base + tagBonus + jefeBonus - debuff + (extra || 0)));
-      }
-      return {
-        card: c,
-        eff: {
-          atq: eff(c.stats.atq, ctx.bonusEquipo.atq + estrella),
-          def: eff(c.stats.def, ctx.bonusEquipo.def),
-          pas: eff(c.stats.pas, ctx.bonusEquipo.pas),
-          vel: eff(c.stats.vel, ctx.bonusEquipo.vel)
-        }
+      var eff = {};
+      var habs = {
+        clutch: c.habilidades.indexOf('clutch') >= 0,
+        killer: c.habilidades.indexOf('killer') >= 0,
+        motor: c.habilidades.indexOf('motor') >= 0,
+        franco: c.habilidades.indexOf('francotirador') >= 0
       };
+      var tagAll = ctx.porTag[c.tag] || 0;
+      var formaBonus = (c.forma || 0) * 0.6;
+      Object.keys(c.attrs).forEach(function (a) {
+        var v = c.attrs[a] + (ctx.equipo[a] || 0) + tagAll + formaBonus - debuff;
+        if (MENTALES.indexOf(a) >= 0) v += moralBonus;
+        eff[a] = v;
+      });
+      // habilidades individuales
+      if (c.habilidades.indexOf('muro') >= 0 && c.pos === 'DEF') {
+        eff.marcaje += 2; eff.colocacion += 2; eff.cabeza += 2;
+      }
+      if (c.habilidades.indexOf('velocista') >= 0) { eff.velocidad += 2; eff.aceleracion += 2; }
+      if (c.habilidades.indexOf('cerrojo') >= 0 && c.pos === 'POR') { eff.reflejos += 2; eff.unoContraUno += 2; }
+      if (c.habilidades.indexOf('francotirador') >= 0) eff.tirosLejanos += 3;
+      if (c.habilidades.indexOf('fajador') >= 0) {
+        eff.fuerza += 2; eff.agresividad += 2;
+        if (opts.esJefe) Object.keys(eff).forEach(function (a) { eff[a] += 1; });
+      }
+      if (c.habilidades.indexOf('estrella') >= 0) {
+        OFENSIVOS.forEach(function (a) { eff[a] += 1; });
+      }
+      Object.keys(eff).forEach(function (a) { eff[a] = Math.max(1, Math.min(22, eff[a])); });
+      return { card: c, attrs: eff, habs: habs };
     });
 
-    return { jugadores: jugadores, hooks: hooks, sinergias: sinergias };
+    return { jugadores: jugadores, sinergias: sinergias, castList: castList };
   }
 
   return { SINERGIAS: SINERGIAS, evaluar: evaluar, aplicar: aplicar };
 })();
+
+if (typeof module !== 'undefined') module.exports = Synergy;

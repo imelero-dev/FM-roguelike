@@ -200,3 +200,26 @@ html.is-mobile #toast-container {
   width: calc(100% - 24px);
 }
 html.is-mobile .toast { font-size: 12.5px; padding: 9px 14px; text-align: center; }
+
+/* ---------- v2: táctica, ficha, HUD partido ---------- */
+html.is-mobile .tactics-layout { grid-template-columns: 1fr; gap: 18px; }
+html.is-mobile .formation-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+html.is-mobile .fc-nombre { font-size: 13px; }
+html.is-mobile .seg-btn { flex: 1; padding: 9px 6px; font-size: 11px; }
+html.is-mobile .scout-panel { padding: 12px; }
+html.is-mobile .scout-panel .mini-pitch { max-width: none; }
+
+html.is-mobile .ficha-box { width: 100%; }
+html.is-mobile .ficha-grid { grid-template-columns: 1fr; gap: 8px; }
+html.is-mobile .ficha-nombre { font-size: 17px; }
+html.is-mobile .ficha-media { font-size: 32px; }
+html.is-mobile .ficha-sprite { width: 56px; height: 56px; }
+
+html.is-mobile .match-statbar { gap: 6px; }
+html.is-mobile .pos-wrap { min-width: 100%; }
+html.is-mobile .ms-chip { font-size: 10px; padding: 3px 8px; flex: 1; text-align: center; }
+html.is-mobile .ht-panel { inset: 1% 2%; padding: 12px 14px; }
+html.is-mobile .ht-tac > span { width: 100%; }
+html.is-mobile .moral-chip { font-size: 11px; padding: 4px 9px; }
+html.is-mobile .pitch-head { flex-wrap: wrap; gap: 4px; }
+html.is-mobile .btn-ficha { padding: 4px 8px; font-size: 13px; }

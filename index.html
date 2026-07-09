@@ -47,10 +47,12 @@ if (!window.Phaser) document.write('<script src="lib/phaser.min.js"><\/script>')
       <ul>
         <li>🏆 <b>Objetivo:</b> quedar campeón de una liga de 8 equipos en 14 jornadas.</li>
         <li>💀 <b>Derrota:</b> 3 derrotas seguidas o no ser campeón al final.</li>
-        <li>🃏 <b>Cartas:</b> tu plantilla son cartas de jugador con stats y habilidades. Alinea 11 en 4-3-3.</li>
+        <li>🃏 <b>Cartas:</b> tu plantilla son cartas con 33 atributos estilo FM (1-20). Toca la lupa de una carta para ver su ficha completa.</li>
+        <li>📋 <b>Táctica:</b> elige entre 7 formaciones y ajusta mentalidad, presión, estilo y amplitud. Cada rival tiene su propio plan: espíalo en el informe y contrarréstalo.</li>
         <li>✨ <b>Sinergias:</b> alinea jugadores con el mismo tag (Cantera, Galáctico, Físico, Técnico) para activar bonos de equipo.</li>
         <li>🧠 <b>Staff:</b> hasta 3 cartas de staff con efectos globales de run.</li>
-        <li>💰 <b>Economía:</b> gana oro con victorias y ventas. Paga salarios cada jornada. Compra en la tienda negociando el precio.</li>
+        <li>⚡ <b>Condición y forma:</b> jugar cansa; rota la plantilla o llegarán las lesiones. Las rachas suben la moral y la forma.</li>
+        <li>💰 <b>Economía:</b> oro por victorias, salarios cada jornada y negociación de fichajes y ventas.</li>
         <li>🔥 <b>Partidos jefe</b> (jornadas 5, 10 y 14): rivales potenciados, botín garantizado de rareza alta.</li>
       </ul>
       <button id="btn-how-close" class="btn">Cerrar</button>
@@ -63,6 +65,7 @@ if (!window.Phaser) document.write('<script src="lib/phaser.min.js"><\/script>')
       <div class="topbar-left">
         <span id="mg-team-name" class="team-badge"></span>
         <span id="mg-jornada" class="jornada-chip"></span>
+        <span id="mg-moral" class="moral-chip" title="Moral del vestuario">😐 60</span>
       </div>
       <div class="topbar-right">
         <span id="mg-gold" class="gold-chip">💰 0</span>
@@ -73,6 +76,7 @@ if (!window.Phaser) document.write('<script src="lib/phaser.min.js"><\/script>')
     <div id="mg-next-rival" class="next-rival"></div>
     <nav class="tabs">
       <button class="tab active" data-tab="tab-lineup">⚽ Alineación</button>
+      <button class="tab" data-tab="tab-tactics">📋 Táctica</button>
       <button class="tab" data-tab="tab-shop">🏪 Tienda</button>
       <button class="tab" data-tab="tab-staff">🧠 Staff</button>
       <button class="tab" data-tab="tab-league">🏆 Liga</button>
@@ -80,14 +84,49 @@ if (!window.Phaser) document.write('<script src="lib/phaser.min.js"><\/script>')
     <main class="manage-body">
       <section id="tab-lineup" class="tab-panel active">
         <div class="lineup-layout">
-          <div class="pitch-mini" id="pitch-mini"></div>
+          <div>
+            <div class="pitch-head">
+              <span id="pitch-formacion" class="formacion-chip"></span>
+              <span id="pitch-cohesion" class="cohesion-mini"></span>
+            </div>
+            <div class="pitch-mini" id="pitch-mini"></div>
+          </div>
           <div class="side-panel">
             <div id="synergy-panel" class="synergy-panel"></div>
             <h4 class="panel-title">Banquillo / Plantilla <span id="squad-count"></span>
               <button id="btn-auto-lineup" class="btn btn-tiny">🪄 Auto-alinear</button>
             </h4>
             <div id="bench-list" class="bench-list"></div>
-            <p class="hint">Haz clic en una carta y luego en una posición del campo para alinearla. Clic en «Vender» para negociar su venta.</p>
+            <p class="hint">Toca una carta y luego una posición del campo para alinearla. La lupa 🔍 abre la ficha completa del jugador.</p>
+          </div>
+        </div>
+      </section>
+      <section id="tab-tactics" class="tab-panel">
+        <div class="tactics-layout">
+          <div>
+            <h3>📋 Formación</h3>
+            <div id="formation-grid" class="formation-grid"></div>
+            <h3 class="tac-title">⚙️ Instrucciones</h3>
+            <div class="tac-group">
+              <h4>Mentalidad</h4><div id="sel-mentalidad" class="seg"></div>
+              <p id="desc-mentalidad" class="tac-desc"></p>
+            </div>
+            <div class="tac-group">
+              <h4>Presión</h4><div id="sel-presion" class="seg"></div>
+              <p id="desc-presion" class="tac-desc"></p>
+            </div>
+            <div class="tac-group">
+              <h4>Estilo de pase</h4><div id="sel-estilo" class="seg"></div>
+              <p id="desc-estilo" class="tac-desc"></p>
+            </div>
+            <div class="tac-group">
+              <h4>Amplitud</h4><div id="sel-amplitud" class="seg"></div>
+              <p id="desc-amplitud" class="tac-desc"></p>
+            </div>
+          </div>
+          <div>
+            <h3>🔎 Informe del rival</h3>
+            <div id="scout-panel" class="scout-panel"></div>
           </div>
         </div>
       </section>
@@ -107,6 +146,8 @@ if (!window.Phaser) document.write('<script src="lib/phaser.min.js"><\/script>')
           <div>
             <h3>📊 Clasificación</h3>
             <table id="league-table" class="league-table"></table>
+            <h3 class="pichichi-title">👟 Pichichi</h3>
+            <table id="pichichi-table" class="league-table pichichi-table"></table>
           </div>
           <div>
             <h3>📅 Calendario</h3>
@@ -133,8 +174,23 @@ if (!window.Phaser) document.write('<script src="lib/phaser.min.js"><\/script>')
         <button id="btn-skip" class="btn btn-small">⏭ Saltar</button>
       </div>
     </div>
+    <div class="match-statbar">
+      <div class="pos-wrap"><div class="pos-bar"><i id="ms-pos-fill"></i></div><span id="ms-pos-val" class="pos-val">50%</span></div>
+      <span id="ms-tiros" class="ms-chip">0 (0) · Tiros · 0 (0)</span>
+      <span id="ms-corners" class="ms-chip">0 · Córners · 0</span>
+    </div>
     <div id="rotate-hint">🔄 Gira el móvil para ver el partido en grande</div>
-    <div id="phaser-container"></div>
+    <div class="match-stage">
+      <div id="phaser-container"></div>
+      <div id="ht-panel" class="ht-panel hidden">
+        <h3>🥤 DESCANSO <span id="ht-marcador"></span></h3>
+        <div id="ht-stats" class="ht-stats"></div>
+        <h4>📋 Pizarra: ajusta para la segunda parte</h4>
+        <div class="ht-tac"><span>Mentalidad</span><div id="ht-mentalidad" class="seg"></div></div>
+        <div class="ht-tac"><span>Presión</span><div id="ht-presion" class="seg"></div></div>
+        <button id="ht-continue" class="btn btn-gold">SEGUNDA PARTE ▶</button>
+      </div>
+    </div>
     <div id="match-feed" class="match-feed"></div>
   </div>
 
@@ -143,6 +199,9 @@ if (!window.Phaser) document.write('<script src="lib/phaser.min.js"><\/script>')
     <div class="post-content">
       <h2 id="post-result-title"></h2>
       <div id="post-score" class="post-score"></div>
+      <div id="post-goleadores" class="post-goleadores"></div>
+      <div id="post-stats" class="post-stats"></div>
+      <div id="post-ratings" class="post-ratings"></div>
       <div id="post-gold" class="post-gold"></div>
       <div id="post-other-results" class="post-other"></div>
       <h3 id="post-drop-title" class="drop-title">🎁 Elige tu recompensa</h3>
@@ -158,6 +217,14 @@ if (!window.Phaser) document.write('<script src="lib/phaser.min.js"><\/script>')
       <p id="end-reason" class="end-reason"></p>
       <div id="end-stats" class="end-stats"></div>
       <button id="btn-end-menu" class="btn btn-big btn-gold">Volver al menú</button>
+    </div>
+  </div>
+
+  <!-- ============ MODAL FICHA DE JUGADOR ============ -->
+  <div id="ficha-modal" class="modal hidden">
+    <div class="modal-box ficha-box">
+      <button id="ficha-close" class="btn btn-tiny ficha-close">✕</button>
+      <div id="ficha-content"></div>
     </div>
   </div>
 
@@ -199,6 +266,8 @@ if (!window.Phaser) document.write('<script src="lib/phaser.min.js"><\/script>')
 
 <script src="js/audio.js"></script>
 <script src="js/sprite.js"></script>
+<script src="js/attrs.js"></script>
+<script src="js/formations.js"></script>
 <script src="js/gen.js"></script>
 <script src="js/synergy.js"></script>
 <script src="js/engine.js"></script>

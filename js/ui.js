@@ -1,5 +1,6 @@
 /* ============================================================
-   UI — renderizado DOM: pantallas, cartas, tienda, liga, negociación
+   UI — renderizado DOM: pantallas, cartas, ficha de jugador,
+   táctica con scouting, tienda, liga, negociación y post-partido.
    ============================================================ */
 
 var UI = (function () {
@@ -7,7 +8,7 @@ var UI = (function () {
   var $ = function (sel) { return document.querySelector(sel); };
   var $$ = function (sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); };
 
-  var seleccionBanquillo = null; // id de carta seleccionada para alinear
+  var seleccionBanquillo = null;
 
   // ---------- utilidades ----------
   function el(tag, cls, html) {
@@ -49,7 +50,6 @@ var UI = (function () {
     return '#' + ('000000' + color.toString(16)).slice(-6);
   }
 
-  // aclara colores oscuros para usarlos como texto sobre fondo oscuro
   function colorLegible(color) {
     var r = (color >> 16) & 255, g = (color >> 8) & 255, b = color & 255;
     if (r * 0.299 + g * 0.587 + b * 0.114 < 90) {
@@ -58,18 +58,29 @@ var UI = (function () {
     return 'rgb(' + r + ',' + g + ',' + b + ')';
   }
 
+  function notaClase(n) {
+    return n >= 7.5 ? 'nota-alta' : n >= 6.3 ? 'nota-media' : 'nota-baja';
+  }
+
+  function condicionColor(c) {
+    return c >= 85 ? 'var(--green)' : c >= 65 ? 'var(--gold)' : 'var(--red)';
+  }
+
+  function formaIcono(f) {
+    if (f >= 1) return '<span class="forma-up">▲</span>';
+    if (f <= -1) return '<span class="forma-down">▼</span>';
+    return '<span class="forma-flat">▬</span>';
+  }
+
   // ---------- render de cartas ----------
   function statsHTML(c) {
-    function bar(label, key, val) {
-      var pct = Math.round(val / 99 * 100);
-      return '<div class="stat-row"><span class="stat-label">' + label + '</span>' +
-        '<span class="stat-bar bar-' + key + '"><i style="width:' + pct + '%"></i></span>' +
-        '<b class="stat-val">' + val + '</b></div>';
-    }
-    return '<div class="card-stats">' +
-      bar('ATQ', 'atq', c.stats.atq) + bar('DEF', 'def', c.stats.def) +
-      bar('PAS', 'pas', c.stats.pas) + bar('VEL', 'vel', c.stats.vel) +
-      '</div>';
+    var barClase = { 0: 'atq', 1: 'def', 2: 'pas', 3: 'vel' };
+    return '<div class="card-stats">' + Attrs.resumen(c).map(function (b, i) {
+      var pct = Math.round(b.val / 99 * 100);
+      return '<div class="stat-row"><span class="stat-label">' + b.label + '</span>' +
+        '<span class="stat-bar bar-' + barClase[i] + '"><i style="width:' + pct + '%"></i></span>' +
+        '<b class="stat-val">' + b.val + '</b></div>';
+    }).join('') + '</div>';
   }
 
   function habsHTML(c) {
@@ -82,6 +93,15 @@ var UI = (function () {
 
   function tagIcono(tag) {
     return (Synergy.SINERGIAS[tag] ? Synergy.SINERGIAS[tag].icono : '') + ' ' + tag;
+  }
+
+  function estadoHTML(c) {
+    // condición + forma en el pie de la carta
+    return '<div class="card-estado">' +
+      '<span class="cond-wrap" title="Condición física"><i class="cond-bar" style="width:' + c.condicion + '%; background:' + condicionColor(c.condicion) + '"></i></span>' +
+      '<span class="cond-num">' + c.condicion + '%</span>' +
+      formaIcono(c.forma) +
+      '</div>';
   }
 
   function cartaDOM(c, opciones) {
@@ -97,22 +117,80 @@ var UI = (function () {
         '<div class="staff-desc">' + c.desc + '</div>' +
         '<div class="card-footer"><span>💰 ' + c.salario + '/j</span></div>';
     } else {
-      d = el('div', 'card rarity-' + c.rareza + (c.lesion > 0 ? ' lesionado' : ''));
+      d = el('div', 'card rarity-' + c.rareza + (c.lesion > 0 ? ' lesionado' : '') + (c.sancion > 0 ? ' sancionado' : ''));
       d.innerHTML =
         '<div class="card-top"><span class="card-pos pos-' + c.pos + '">' + c.pos + '</span>' +
+        '<button class="btn-ficha" title="Ver ficha completa">🔍</button>' +
         '<span class="card-media">' + c.media + '</span></div>' +
         retrato +
         '<div class="card-name">' + c.nombre + '</div>' +
-        '<div class="card-tag">' + tagIcono(c.tag) + '</div>' +
+        '<div class="card-tag">' + tagIcono(c.tag) + ' · ' + c.edad + ' años</div>' +
         statsHTML(c) + habsHTML(c) +
+        estadoHTML(c) +
         '<div class="card-footer"><span class="rareza-label">' + Gen.RAREZAS[c.rareza].nombre + '</span>' +
         '<span>💰 ' + c.salario + '/j</span></div>' +
-        (c.lesion > 0 ? '<div class="lesion-badge">🚑 ' + c.lesion + ' j.</div>' : '');
+        (c.lesion > 0 ? '<div class="lesion-badge">🚑 ' + c.lesion + ' j.</div>' : '') +
+        (c.sancion > 0 ? '<div class="lesion-badge sancion-badge">🟥 ' + c.sancion + ' j.</div>' : '');
+      var lupa = d.querySelector('.btn-ficha');
+      lupa.onclick = function (ev) {
+        ev.stopPropagation();
+        AudioFX.click();
+        showFicha(c);
+      };
     }
     d.dataset.id = c.id;
     if (opciones.mini) d.classList.add('card-mini');
     d.addEventListener('mouseenter', function () { AudioFX.hover(); });
     return d;
+  }
+
+  // ---------- ficha de jugador (33 atributos) ----------
+  function showFicha(c) {
+    var cont = $('#ficha-content');
+    var mediaTemp = c.temporada.pj > 0 ? (c.temporada.ratingTotal / c.temporada.pj).toFixed(1) : '—';
+
+    var html =
+      '<div class="ficha-head">' +
+      '<img class="pixel-sprite ficha-sprite" src="' + Sprite.avatar(c) + '" alt="">' +
+      '<div class="ficha-id">' +
+      '<div class="ficha-nombre">' + c.nombre + '</div>' +
+      '<div class="ficha-sub"><span class="card-pos pos-' + c.pos + '">' + c.pos + '</span> ' +
+      tagIcono(c.tag) + ' · ' + c.edad + ' años · <span class="rareza-label rarity-' + c.rareza + '-txt">' + Gen.RAREZAS[c.rareza].nombre + '</span></div>' +
+      '<div class="ficha-sub">💰 ' + c.salario + '/jornada · Valor ~' + c.valorBase + ' 💰</div>' +
+      estadoHTML(c) +
+      '</div>' +
+      '<div class="ficha-media">' + c.media + '</div>' +
+      '</div>';
+
+    html += habsHTML(c);
+
+    // grupos de atributos: portero primero si es POR
+    var grupos = Attrs.GRUPOS.slice();
+    if (c.pos === 'POR') grupos = [grupos[3], grupos[1], grupos[2], grupos[0]];
+    html += '<div class="ficha-grid">';
+    grupos.forEach(function (g) {
+      // no ensucia la ficha de un jugador de campo con la portería
+      if (c.pos !== 'POR' && g.key === 'portero') return;
+      html += '<div class="ficha-grupo"><h5>' + g.nombre + '</h5>';
+      g.attrs.forEach(function (a) {
+        var v = c.attrs[a];
+        html += '<div class="attr-row"><span>' + Attrs.NOMBRES[a] + '</span>' +
+          '<span class="attr-mini-bar"><i class="' + Attrs.colorAttr(v) + '-bg" style="width:' + (v / 20 * 100) + '%"></i></span>' +
+          '<b class="attr-val ' + Attrs.colorAttr(v) + '">' + v + '</b></div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+
+    html += '<div class="ficha-temporada">' +
+      '<span>PJ <b>' + c.temporada.pj + '</b></span>' +
+      '<span>⚽ <b>' + c.temporada.goles + '</b></span>' +
+      '<span>🅰️ <b>' + c.temporada.asistencias + '</b></span>' +
+      '<span>Nota media <b>' + mediaTemp + '</b></span>' +
+      '</div>';
+
+    cont.innerHTML = html;
+    $('#ficha-modal').classList.remove('hidden');
   }
 
   // ---------- pantalla: menú ----------
@@ -136,16 +214,20 @@ var UI = (function () {
     $('#mg-jornada').textContent = 'Jornada ' + run.jornada + '/14';
     $('#mg-gold').textContent = '💰 ' + run.oro;
     $('#mg-salary').textContent = '📉 ' + State.salarioTotal() + '/jornada';
+    var mEmoji = run.moral >= 80 ? '😄' : run.moral >= 60 ? '🙂' : run.moral >= 45 ? '😐' : '😟';
+    $('#mg-moral').textContent = mEmoji + ' ' + run.moral;
 
-    var peligro = rival.rating >= 76 ? '🔴' : rival.rating >= 66 ? '🟠' : '🟢';
+    var peligro = rival.rating >= 68 ? '🔴' : rival.rating >= 58 ? '🟠' : '🟢';
     $('#mg-next-rival').innerHTML =
       (jefe ? '<span class="boss-label">' + jefe + '</span> ' : '') +
       'Próximo rival: <b style="color:' + colorLegible(rival.color) + '">' + rival.nombre + '</b> ' +
       '(' + (p.esLocal ? 'casa' : 'fuera') + ') · Nivel ' + rival.rating + ' ' + peligro +
+      ' · Juega en <b>' + rival.tactica.formacion + '</b> — informe completo en 📋 Táctica' +
       (jefe ? ' · <span class="boss-hint">botín de rareza alta garantizado</span>' : '');
     $('#mg-next-rival').classList.toggle('es-jefe', !!jefe);
 
     renderLineup();
+    renderTactics();
     renderShop();
     renderStaff();
     renderLeague();
@@ -156,47 +238,53 @@ var UI = (function () {
     showScreen('screen-manage');
   }
 
-  // ----- alineación (click-to-swap) -----
-  var SLOT_COORDS = [
-    [50, 88],                                   // POR
-    [14, 68], [38, 73], [62, 73], [86, 68],     // DEF
-    [25, 47], [50, 53], [75, 47],               // MED
-    [20, 24], [50, 17], [80, 24]                // DEL
-  ];
+  // ----- alineación (click-to-swap sobre la formación actual) -----
+  function coordsSlot(sl) {
+    // el campo se pinta en vertical: ataque hacia arriba
+    var top = 92 - sl.x * 118;
+    var left = 8 + sl.y * 84;
+    return { top: Math.max(8, Math.min(90, top)), left: left };
+  }
 
   function renderLineup() {
     var run = State.run;
     var pitch = $('#pitch-mini');
     pitch.innerHTML = '<div class="pitch-lines"></div>';
+    var slots = State.slotsActuales();
 
-    State.SLOT_POS.forEach(function (pos, i) {
+    $('#pitch-formacion').textContent = run.tactica.formacion;
+    var coh = State.cohesionActual();
+    $('#pitch-cohesion').innerHTML = 'Cohesión <span class="coh-bar"><i style="width:' + coh + '%"></i></span> ' + coh + '%';
+
+    slots.forEach(function (sl, i) {
       var slot = el('div', 'pitch-slot');
-      slot.style.left = SLOT_COORDS[i][0] + '%';
-      slot.style.top = SLOT_COORDS[i][1] + '%';
+      var co = coordsSlot(sl);
+      slot.style.left = co.left + '%';
+      slot.style.top = co.top + '%';
       var carta = State.cartaPorId(run.alineacion[i]);
       if (carta) {
         slot.classList.add('ocupado', 'rarity-' + carta.rareza);
         slot.innerHTML = '<img class="pixel-sprite slot-sprite" src="' + Sprite.avatar(carta) + '" alt="">' +
           '<span class="slot-media">' + carta.media + '</span>' +
           '<span class="slot-name">' + carta.nombre.split(' ')[1] + '</span>';
-        slot.title = carta.nombre + ' (' + pos + ') — clic para retirar del once';
+        slot.title = carta.nombre + ' (' + sl.rol + ') — clic para retirar del once';
       } else {
-        slot.innerHTML = '<span class="slot-pos-empty">' + pos + '</span>';
+        slot.innerHTML = '<span class="slot-pos-empty">' + sl.pos + '</span><span class="slot-rol">' + sl.rol + '</span>';
       }
       if (seleccionBanquillo) {
         var sel = State.cartaPorId(seleccionBanquillo);
-        if (sel && sel.pos === pos) slot.classList.add('destino-valido');
+        if (sel && sel.pos === sl.pos) slot.classList.add('destino-valido');
       }
       slot.onclick = function () {
         AudioFX.click();
         if (seleccionBanquillo) {
           var sel2 = State.cartaPorId(seleccionBanquillo);
-          if (sel2 && sel2.pos === pos) {
+          if (sel2 && sel2.pos === sl.pos) {
             State.asignarSlot(i, seleccionBanquillo);
             seleccionBanquillo = null;
             renderManage();
           } else {
-            toast('Esa carta no juega de ' + pos, 'error');
+            toast('Esa carta no juega de ' + sl.pos, 'error');
           }
         } else if (carta) {
           State.quitarSlot(i);
@@ -233,6 +321,7 @@ var UI = (function () {
       d.onclick = function () {
         AudioFX.click();
         if (c.lesion > 0) { toast('🚑 ' + c.nombre + ' está lesionado (' + c.lesion + ' jornadas)', 'error'); return; }
+        if (c.sancion > 0) { toast('🟥 ' + c.nombre + ' está sancionado (' + c.sancion + ' jornadas)', 'error'); return; }
         seleccionBanquillo = seleccionBanquillo === c.id ? null : c.id;
         renderManage();
       };
@@ -246,6 +335,91 @@ var UI = (function () {
       wrap.appendChild(btnVender);
       bench.appendChild(wrap);
     });
+  }
+
+  // ----- táctica -----
+  function miniPitchHTML(formKey) {
+    var slots = Formations.DEFS[formKey].slots;
+    return '<div class="mini-pitch">' + slots.map(function (sl) {
+      var left = 6 + sl.y * 88;
+      var top = 90 - sl.x * 120;
+      return '<i class="mp-dot mp-' + sl.pos + '" style="left:' + left + '%; top:' + Math.max(6, top) + '%"></i>';
+    }).join('') + '</div>';
+  }
+
+  function renderTactics() {
+    var run = State.run;
+    var tac = run.tactica;
+
+    // rejilla de formaciones
+    var grid = $('#formation-grid');
+    grid.innerHTML = '';
+    Formations.LISTA.forEach(function (key) {
+      var def = Formations.DEFS[key];
+      var puede = State.puedeFormacion(key);
+      var coh = run.cohesion[key] || 0;
+      var card = el('div', 'formation-card' + (key === tac.formacion ? ' activa' : '') + (puede ? '' : ' bloqueada'));
+      var req = Formations.req(key);
+      card.innerHTML =
+        '<div class="fc-nombre">' + def.nombre + '</div>' +
+        miniPitchHTML(key) +
+        '<div class="fc-req">' + req.DEF + ' DEF · ' + req.MED + ' MED · ' + req.DEL + ' DEL</div>' +
+        '<div class="fc-coh"><span class="coh-bar"><i style="width:' + coh + '%"></i></span> ' + coh + '%</div>' +
+        (puede ? '' : '<div class="fc-lock">Sin efectivos</div>');
+      card.title = def.desc;
+      card.onclick = function () {
+        if (!puede) { toast('No tienes jugadores disponibles para el ' + key, 'error'); AudioFX.error(); return; }
+        if (key === tac.formacion) return;
+        AudioFX.click();
+        State.cambiarFormacion(key);
+        seleccionBanquillo = null;
+        State.autoAlinear();
+        renderManage();
+        $('.tab[data-tab="tab-tactics"]').click();
+        toast('Formación cambiada a ' + key + '. La cohesión crece jugando con ella.');
+      };
+      grid.appendChild(card);
+    });
+
+    // selectores de instrucciones
+    function seg(contId, descId, opciones, actual, aplicar) {
+      var cont = $('#' + contId);
+      cont.innerHTML = '';
+      var descActual = '';
+      opciones.forEach(function (o) {
+        var btn = el('button', 'btn btn-small seg-btn' + (o.v === actual ? ' active' : ''), o.nombre);
+        if (o.v === actual) descActual = o.desc;
+        btn.onclick = function () {
+          AudioFX.click();
+          aplicar(o.v);
+          renderTactics();
+        };
+        cont.appendChild(btn);
+      });
+      $('#' + descId).textContent = descActual;
+    }
+    seg('sel-mentalidad', 'desc-mentalidad', Formations.MENTALIDADES, tac.mentalidad, function (v) { tac.mentalidad = v; });
+    seg('sel-presion', 'desc-presion', Formations.PRESIONES, tac.presion, function (v) { tac.presion = v; });
+    seg('sel-estilo', 'desc-estilo', Formations.ESTILOS, tac.estilo, function (v) { tac.estilo = v; });
+    seg('sel-amplitud', 'desc-amplitud', Formations.AMPLITUDES, tac.amplitud, function (v) { tac.amplitud = v; });
+
+    // scouting del rival
+    var rival = State.rivalActual();
+    var jefe = State.etiquetaJefe(run.jornada);
+    var consejos = Formations.consejos(tac.formacion, rival.tactica);
+    var estrellas = rival.rating >= 68 ? '★★★★★' : rival.rating >= 62 ? '★★★★' : rival.rating >= 56 ? '★★★' : rival.rating >= 50 ? '★★' : '★';
+    $('#scout-panel').innerHTML =
+      '<div class="scout-head">' +
+      '<span class="dot" style="background:' + colorHex(rival.color) + '"></span>' +
+      '<b style="color:' + colorLegible(rival.color) + '">' + rival.nombre + '</b>' +
+      (jefe ? ' <span class="boss-label">' + jefe + '</span>' : '') +
+      '</div>' +
+      '<div class="scout-row">Nivel <b>' + rival.rating + '</b> <span class="scout-stars">' + estrellas + '</span></div>' +
+      '<div class="scout-row">Plan de partido: <b>' + Formations.etiquetaTactica(rival.tactica) + '</b></div>' +
+      miniPitchHTML(rival.tactica.formacion) +
+      (rival.estrella ? '<div class="scout-row">⭐ Peligro: <b>' + rival.estrella + '</b></div>' : '') +
+      '<h5 class="scout-consejos-t">Informe del ojeador</h5>' +
+      '<ul class="scout-consejos">' + consejos.map(function (c) { return '<li>' + c + '</li>'; }).join('') + '</ul>';
   }
 
   // ----- tienda -----
@@ -275,7 +449,7 @@ var UI = (function () {
             toast('Ya tienes 3 cartas de staff. Despide a alguien primero.', 'error'); return;
           }
           if (c.type === 'player' && run.plantilla.length >= State.MAX_PLANTILLA) {
-            toast('Plantilla llena (15). Vende antes de comprar.', 'error'); return;
+            toast('Plantilla llena (' + State.MAX_PLANTILLA + '). Vende antes de comprar.', 'error'); return;
           }
           iniciarCompra(c, idx);
         };
@@ -323,6 +497,19 @@ var UI = (function () {
     });
     $('#league-table').innerHTML = html;
 
+    // pichichi
+    var goleadores = League.pichichi(6);
+    var ph = '<tr><th>#</th><th>Jugador</th><th>Equipo</th><th>⚽</th></tr>';
+    if (!goleadores.length) ph += '<tr><td colspan="4" class="muted">Aún no hay goles</td></tr>';
+    goleadores.forEach(function (g, i) {
+      var esMio = g.equipo.esJugador;
+      ph += '<tr class="' + (esMio ? 'fila-jugador' : '') + '"><td>' + (i + 1) + '</td>' +
+        '<td>' + g.nombre + (esMio ? ' ★' : '') + '</td>' +
+        '<td><span class="dot" style="background:' + colorHex(g.equipo.color) + '"></span>' + g.equipo.nombre + '</td>' +
+        '<td><b>' + g.goles + '</b></td></tr>';
+    });
+    $('#pichichi-table').innerHTML = ph;
+
     var cal = $('#calendar');
     cal.innerHTML = '';
     run.calendario.forEach(function (ronda, j) {
@@ -342,7 +529,7 @@ var UI = (function () {
       }
       var fila = el('div', 'cal-row' + (jn === run.jornada ? ' cal-actual' : '') + (jefe ? ' cal-jefe' : ''));
       fila.innerHTML = '<span class="cal-j">J' + jn + '</span>' +
-        '<span class="cal-rival">' + (esLocal ? 'vs ' : '@ ') + rival.nombre + '</span>' +
+        '<span class="cal-rival">' + (esLocal ? 'vs ' : '@ ') + rival.nombre + ' <span class="muted">(' + rival.tactica.formacion + ')</span></span>' +
         (jefe ? '<span class="cal-boss">' + jefe.split(' ')[0] + '</span>' : '') +
         '<span class="cal-res">' + res + '</span>';
       cal.appendChild(fila);
@@ -350,7 +537,7 @@ var UI = (function () {
   }
 
   // ---------- negociación ----------
-  var negoCtx = null; // {modo, carta, shopIdx, onFin}
+  var negoCtx = null;
 
   function frasesIA(modo) {
     return modo === 'compra'
@@ -394,7 +581,6 @@ var UI = (function () {
   }
 
   function iniciarCompra(carta, shopIdx) {
-    var run = State.run;
     var base = carta.valorBase;
     Nego.iniciar('compra', carta, base);
     negoCtx = { modo: 'compra', carta: carta, shopIdx: shopIdx };
@@ -404,11 +590,11 @@ var UI = (function () {
   }
 
   function iniciarVenta(carta) {
-    // evita el soft-lock: no se puede vender si dejaría la posición sin cubrir
-    var REQ = { POR: 1, DEF: 4, MED: 3, DEL: 3 };
+    // evita el soft-lock: no vender si deja la formación actual sin cubrir
+    var REQ = State.reqActual();
     var mismos = State.run.plantilla.filter(function (c) { return c.pos === carta.pos; }).length;
-    if (mismos <= REQ[carta.pos]) {
-      toast('No puedes venderlo: necesitas al menos ' + REQ[carta.pos] + ' ' + carta.pos + ' en plantilla', 'error');
+    if (carta.type === 'player' && mismos <= REQ[carta.pos]) {
+      toast('No puedes venderlo: tu ' + State.run.tactica.formacion + ' necesita ' + REQ[carta.pos] + ' ' + carta.pos, 'error');
       AudioFX.error();
       return;
     }
@@ -505,7 +691,6 @@ var UI = (function () {
   }
 
   // ---------- post-partido ----------
-  // resumen: {gf, gc, resultado, rival, esJefe, oroTotal, detalles, otros, lesion, drop}
   function renderPost(resumen, onContinue) {
     var run = State.run;
     var titulo = resumen.resultado === 'V' ? '🏆 ¡VICTORIA!' : resumen.resultado === 'E' ? '🤝 EMPATE' : '💔 DERROTA';
@@ -514,6 +699,46 @@ var UI = (function () {
     $('#post-score').innerHTML =
       run.equipos[0].nombre + ' <b class="marcador">' + resumen.gf + ' - ' + resumen.gc + '</b> ' + resumen.rival.nombre +
       (resumen.esJefe ? ' <span class="boss-label">PARTIDO JEFE</span>' : '');
+
+    // goleadores
+    $('#post-goleadores').innerHTML = (resumen.goleadores || []).map(function (g) {
+      return '<span class="gol-chip ' + (g.team === 0 ? 'gol-mio' : 'gol-rival') + '">' +
+        g.min + "' ⚽ " + g.nombre + (g.asistente ? ' <i>(' + g.asistente + ')</i>' : '') + '</span>';
+    }).join(' ');
+
+    // estadísticas del partido
+    var st = resumen.statsPartido;
+    if (st) {
+      function fila(lbl, a, b) {
+        return '<div class="ps-row"><span>' + a + '</span><b>' + lbl + '</b><span>' + b + '</span></div>';
+      }
+      $('#post-stats').innerHTML =
+        fila('Posesión', st[0].posesion + '%', st[1].posesion + '%') +
+        fila('Tiros (a puerta)', st[0].tiros + ' (' + st[0].aPuerta + ')', st[1].tiros + ' (' + st[1].aPuerta + ')') +
+        fila('xG', st[0].xg.toFixed(2), st[1].xg.toFixed(2)) +
+        fila('Pases (acierto)', st[0].pases + ' (' + (st[0].pases ? Math.round(st[0].pasesOk / st[0].pases * 100) : 0) + '%)',
+          st[1].pases + ' (' + (st[1].pases ? Math.round(st[1].pasesOk / st[1].pases * 100) : 0) + '%)') +
+        fila('Faltas', st[0].faltas, st[1].faltas) +
+        fila('Tarjetas', '🟨' + st[0].amarillas + ' 🟥' + st[0].rojas, '🟨' + st[1].amarillas + ' 🟥' + st[1].rojas) +
+        fila('Córners', st[0].corners, st[1].corners);
+    }
+
+    // notas de tus jugadores
+    var ratings = (resumen.ratings || []).slice().sort(function (a, b) { return b.nota - a.nota; });
+    $('#post-ratings').innerHTML = '<h4>Notas del equipo</h4>' +
+      '<div class="ratings-grid">' + ratings.map(function (j) {
+        var esMvp = resumen.mvp && resumen.mvp.cardId === j.cardId;
+        return '<div class="rating-row' + (esMvp ? ' mvp' : '') + '">' +
+          (esMvp ? '<span class="mvp-badge">MVP</span>' : '') +
+          '<span class="rr-pos">' + j.pos + '</span>' +
+          '<span class="rr-nombre">' + j.nombre + '</span>' +
+          '<span class="rr-extra">' +
+          (j.goles ? '⚽' + j.goles + ' ' : '') + (j.asis ? '🅰️' + j.asis + ' ' : '') +
+          (j.paradas ? '🧤' + j.paradas + ' ' : '') +
+          (j.amarilla ? '🟨 ' : '') + (j.roja ? '🟥 ' : '') + '</span>' +
+          '<b class="rr-nota ' + notaClase(j.nota) + '">' + j.nota.toFixed(1) + '</b>' +
+          '</div>';
+      }).join('') + '</div>';
 
     // desglose de oro con contador animado
     var pg = $('#post-gold');
@@ -561,8 +786,8 @@ var UI = (function () {
       var btnSell = el('button', 'btn btn-tiny', 'Venta rápida +' + Economy.precioVenta(c) + ' 💰');
       btnKeep.onclick = function () {
         if (elegido) return;
-        if (c.type === 'staff' && run.staff.length >= State.MAX_STAFF) { toast('Staff completo (3)', 'error'); return; }
-        if (c.type === 'player' && run.plantilla.length >= State.MAX_PLANTILLA) { toast('Plantilla llena (15): usa venta rápida o pasa', 'error'); return; }
+        if (c.type === 'staff' && State.run.staff.length >= State.MAX_STAFF) { toast('Staff completo (3)', 'error'); return; }
+        if (c.type === 'player' && State.run.plantilla.length >= State.MAX_PLANTILLA) { toast('Plantilla llena: usa venta rápida o pasa', 'error'); return; }
         elegido = true;
         State.agregarCarta(c);
         AudioFX.buy();
@@ -573,8 +798,8 @@ var UI = (function () {
         if (elegido) return;
         elegido = true;
         var oro = Economy.precioVenta(c);
-        run.oro += oro;
-        run.stats.oroGanado += oro;
+        State.run.oro += oro;
+        State.run.stats.oroGanado += oro;
         AudioFX.sell();
         toast('+' + oro + ' 💰 por venta rápida');
         finalizarEleccion(flip);
@@ -588,7 +813,6 @@ var UI = (function () {
       flip.appendChild(inner);
       dc.appendChild(flip);
 
-      // reveal escalonado
       setTimeout(function () {
         flip.classList.add('flipped');
         AudioFX.flip();
@@ -606,7 +830,6 @@ var UI = (function () {
     }
 
     if (resumen.drop.length) {
-      // opción de pasar del drop
       var pasar = el('button', 'btn btn-ghost btn-small drop-skip', 'No quiero ninguna');
       pasar.onclick = function () {
         if (elegido) return;
@@ -678,6 +901,13 @@ var UI = (function () {
   function init() {
     wireTabs();
     wireNego();
+    $('#ficha-close').onclick = function () {
+      AudioFX.click();
+      $('#ficha-modal').classList.add('hidden');
+    };
+    $('#ficha-modal').onclick = function (ev) {
+      if (ev.target === this) $('#ficha-modal').classList.add('hidden');
+    };
   }
 
   return {
@@ -687,6 +917,7 @@ var UI = (function () {
     toast: toast,
     confirmar: confirmar,
     cartaDOM: cartaDOM,
+    showFicha: showFicha,
     colorHex: colorHex,
     renderMenu: renderMenu,
     renderManage: renderManage,
