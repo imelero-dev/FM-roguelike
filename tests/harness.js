@@ -11,7 +11,7 @@ var path = require('path');
 var vm = require('vm');
 
 var ROOT = path.join(__dirname, '..');
-var MODULES = ['attrs', 'formations', 'gen', 'synergy', 'engine', 'state', 'league', 'economy', 'nego', 'ui', 'mobile', 'match', 'main'];
+var MODULES = ['attrs', 'formations', 'gen', 'synergy', 'engine', 'commentary', 'state', 'league', 'economy', 'nego', 'ui', 'mobile', 'match', 'main'];
 
 function memoryStorage() {
   var s = {};

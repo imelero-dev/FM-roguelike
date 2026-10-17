@@ -919,6 +919,25 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .ht-stats { display: flex; flex-direction: column; gap: 3px; }
 .ht-row { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; border-bottom: 1px solid #241f38; }
 .ht-row b { color: var(--muted); font-size: 11px; text-transform: uppercase; }
+.ht-head { font-weight: 800; font-size: 12px; color: var(--text); border-bottom-width: 2px; }
+.ht-top {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: #1d1830; border: 2px solid var(--border); border-radius: 10px; padding: 6px 12px;
+}
+.ht-top-label { font-size: 11px; color: var(--gold); text-transform: uppercase; font-weight: 800; }
+.ht-top-name { font-weight: 800; }
+.ht-top-meta { font-size: 11.5px; color: var(--muted); }
+.ht-top-nota {
+  margin-left: auto; font-weight: 900; color: #1a1a1a; background: var(--gold);
+  border-radius: 8px; padding: 1px 8px; font-size: 14px;
+}
+.ht-momentos { display: flex; flex-direction: column; gap: 3px; }
+.ht-moment { font-size: 13px; }
+.ht-moment-min { color: var(--muted); font-weight: 800; display: inline-block; min-width: 28px; }
+.ht-mio { color: #bde3c5; }
+.ht-rival { color: #e3bdbd; }
+.ht-quiet { color: var(--muted); font-style: italic; }
+.feed-chance { font-style: italic; }
 .ht-tac { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ht-tac > span { font-size: 11.5px; color: var(--muted); width: 78px; }
 #ht-continue { margin-top: auto; align-self: center; }

@@ -351,7 +351,7 @@ var Engine = (function () {
     this.stats[f.team].tiros++; this.stats[f.team].xg += 0.78;
     p.st.tiros++;
     this.ball.owner = { team: f.team, i: p.i };
-    this._lanzarTiro(p, resultado, 0.78, false);
+    this._lanzarTiro(p, resultado, 0.78, false, true);
   };
 
   // ---------- passes / crosses / clearances ----------
@@ -517,7 +517,7 @@ var Engine = (function () {
     this._lanzarTiro(p, resultado, q, opts.cabeza);
   };
 
-  MatchEngine.prototype._lanzarTiro = function (p, resultado, q, cabeza) {
+  MatchEngine.prototype._lanzarTiro = function (p, resultado, q, cabeza, penalti) {
     var team = p.team;
     var b = this.ball;
     var goalX = fxOf(team, 105);
@@ -534,13 +534,14 @@ var Engine = (function () {
       origenX: p.x, origenY: p.y, destX: goalX, destY: ty,
       d: Math.max(1, d), s: 0, speed: cabeza ? 34 : clamp(40 + this.A(p, 'remate') * 2.2, 45, 88),
       lofted: false, h: cabeza ? 1.5 : 0,
-      team: team, pasadorI: p.i, tirador: p
+      team: team, pasadorI: p.i, tirador: p, penalti: !!penalti
     };
     b.lastTouch = team;
     // keeper dives
     var gk = this.players[1 - team][0];
     gk.task = { tipo: 'estirada', tx: goalX + (team === 0 ? -1.2 : 1.2), ty: clamp(ty, 34 - GOL_Y - 1, 34 + GOL_Y + 1) };
-    this._ev('tiro_va', { team: team, jugador: p.nombre });
+    // xg/cabeza/penalti only feed the commentary (no gameplay effect)
+    this._ev('tiro_va', { team: team, jugador: p.nombre, xg: q, cabeza: !!cabeza, penalti: !!penalti });
   };
 
   MatchEngine.prototype._resolverLlegadaTiro = function () {
@@ -564,14 +565,14 @@ var Engine = (function () {
         asis = pasador.nombre;
       }
       this.goleadores.push({ team: team, min: this.minuto, nombre: p.nombre, cardId: p.cardId, asistente: asis });
-      this._ev('gol', { team: team, jugador: p.nombre, cardId: p.cardId, asistente: asis, marcador: this.marcador.slice() });
+      this._ev('gol', { team: team, jugador: p.nombre, cardId: p.cardId, asistente: asis, marcador: this.marcador.slice(), xg: plan.q, penalti: plan.penalti });
       this.fase = { tipo: 'celebracion', timer: 2.4, kickoffTeam: 1 - team };
       this._limpiarTareas();
     } else if (plan.resultado === 'parada') {
       gk.st.paradas++;
       gk.nota += 0.28;
       p.nota += 0.10;
-      this._ev('tiro', { team: team, jugador: p.nombre, resultado: 'parada', portero: gk.nombre });
+      this._ev('tiro', { team: team, jugador: p.nombre, resultado: 'parada', portero: gk.nombre, xg: plan.q, penalti: plan.penalti });
       var atrapa = Math.random() < clamp(this.A(gk, 'paradas') * 0.045, 0.2, 0.8);
       if (atrapa) {
         b.owner = { team: gk.team, i: gk.i };
@@ -590,14 +591,14 @@ var Engine = (function () {
       }
     } else if (plan.resultado === 'palo') {
       p.nota += 0.05;
-      this._ev('tiro', { team: team, jugador: p.nombre, resultado: 'palo' });
+      this._ev('tiro', { team: team, jugador: p.nombre, resultado: 'palo', xg: plan.q, penalti: plan.penalti });
       b.x = plan.destX + (team === 0 ? -2 : 2);
       b.y = plan.destY;
       b.vx = (team === 0 ? -1 : 1) * (8 + Math.random() * 8);
       b.vy = (Math.random() * 2 - 1) * 10;
     } else {
       p.nota -= 0.04;
-      this._ev('tiro', { team: team, jugador: p.nombre, resultado: 'fuera' });
+      this._ev('tiro', { team: team, jugador: p.nombre, resultado: 'fuera', xg: plan.q, penalti: plan.penalti });
       this._saque('puerta', 1 - team, fxOf(1 - team, 5.5), 34 + (Math.random() < 0.5 ? -8 : 8));
     }
   };
