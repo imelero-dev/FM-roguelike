@@ -4,7 +4,7 @@ Prototipo web jugable de un juego de gestión de fútbol **roguelike**: mezcla d
 
 ## Cómo jugar
 
-Abre `index.html` en un navegador (o sirve la carpeta con `python3 -m http.server` y visita `http://localhost:8000`). No hay build ni dependencias: Phaser 3 se carga desde CDN, con copia local en `lib/` como fallback offline. En móvil la interfaz cambia sola a un modo táctil tipo app (forzable con `?mobile=1`).
+Abre `index.html` en un navegador (o sirve la carpeta con `python3 -m http.server` y visita `http://localhost:8000`). No hay build ni dependencias: Phaser 3.80.1 va incluido en `lib/` y se carga localmente, así que funciona sin servidor y sin conexión. En móvil la interfaz cambia sola a un modo táctil tipo app (forzable con `?mobile=1`).
 
 ## El juego
 
@@ -54,6 +54,8 @@ js/match.js        Render Phaser del partido + HUD + pizarra del descanso
 js/mobile.js       Reestructura la UI para táctil (nav inferior, steppers)
 js/main.js         Flujo de la run
 js/audio.js        Sonido sintetizado con WebAudio (sin assets)
+tests/smoke.js     Test headless en Node: juega temporadas completas y comprueba invariantes
+tests/browser-check.js  Abre index.html en Chrome headless (file://) y lista errores de consola
 ```
 
 El motor es independiente del render: `Engine.MatchEngine.step(dt)` avanza la simulación tanto para el partido visible como para el skip y los resultados instantáneos del resto de la jornada.

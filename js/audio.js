@@ -51,7 +51,8 @@ var AudioFX = (function () {
 
   return {
     click: function () { tone(660, 0.06, 'square', 0.06); },
-    hover: function () { tone(440, 0.03, 'sine', 0.02); },
+    // el hover no crea el AudioContext: sin gesto previo el navegador lo bloquea y avisa en consola
+    hover: function () { if (ctx && ctx.state === 'running') tone(440, 0.03, 'sine', 0.02); },
     buy: function () { tone(523, 0.08, 'square', 0.08); tone(784, 0.1, 'square', 0.08, 0.08); },
     sell: function () { tone(784, 0.08, 'square', 0.08); tone(523, 0.1, 'square', 0.08, 0.08); },
     error: function () { tone(180, 0.15, 'sawtooth', 0.08, 0, 120); },

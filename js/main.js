@@ -15,7 +15,9 @@
   function jugarPartido() {
     var run = State.run;
     if (!State.onceCompleto()) {
-      UI.toast('Necesitas 11 jugadores alineados', 'error');
+      UI.toast(State.puedeFormacion(run.tactica.formacion)
+        ? 'Necesitas 11 jugadores disponibles alineados'
+        : 'Te faltan efectivos para el ' + run.tactica.formacion + ': cambia de formación en 📋 Táctica o ficha', 'error');
       AudioFX.error();
       return;
     }
@@ -59,6 +61,10 @@
     });
     run.debuffProxPartido = 0;
 
+    // las bajas previas cumplen esta jornada ANTES de aplicar las nuevas
+    // (si no, una roja o lesión de 1 jornada no se cumplía nunca)
+    Economy.avanzarLesiones();
+
     // actualización por jugador: temporada, forma, condición, sanciones
     var mvp = null;
     resultado.jugadores[0].forEach(function (j) {
@@ -70,7 +76,11 @@
       c.temporada.ratingTotal += j.nota;
       c.forma = Math.max(-3, Math.min(3, Math.round((c.forma + (j.nota - 6.4) * 0.5) * 10) / 10));
       c.condicion = Math.max(20, Math.round(c.condicion - (100 - j.stamina) * 0.42 - 6));
-      if (j.roja) c.sancion = 1;
+      if (j.roja) {
+        c.sancion = 1;
+        var idx = run.alineacion.indexOf(c.id);
+        if (idx >= 0) run.alineacion[idx] = null;
+      }
       if (!mvp || j.nota > mvp.nota) mvp = j;
     });
 
@@ -130,7 +140,6 @@
     }
 
     run.jornada++;
-    Economy.avanzarLesiones();
     Economy.recuperarJornada();
     var pago = Economy.pagarSalarios();
     if (pago.extra) UI.toast('💎 Mecenas aporta +' + pago.extra + ' 💰');

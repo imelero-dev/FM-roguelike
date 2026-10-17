@@ -679,6 +679,11 @@ var UI = (function () {
     $('#nego-btn-accept').onclick = function () {
       if (!negoCtx) return;
       AudioFX.click();
+      // sin oro suficiente no cierra la sesión: se puede seguir negociando
+      var s = Nego.actual();
+      if (negoCtx.modo === 'compra' && s && s.contraoferta > State.run.oro) {
+        toast('Solo tienes ' + State.run.oro + ' 💰', 'error'); AudioFX.error(); return;
+      }
       var precio = Nego.aceptarContraoferta();
       if (precio !== null) resolverTrato(precio);
     };

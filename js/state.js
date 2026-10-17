@@ -155,7 +155,10 @@ var State = (function () {
   }
 
   function onceCompleto() {
-    return run.alineacion.every(function (id) { return !!cartaPorId(id); });
+    return run.alineacion.every(function (id) {
+      var c = cartaPorId(id);
+      return !!c && disponible(c);
+    });
   }
 
   // ---- plantilla ----

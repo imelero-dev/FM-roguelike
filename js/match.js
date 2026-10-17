@@ -219,7 +219,9 @@ var Match = (function () {
       parent: 'phaser-container',
       width: W, height: H,
       scene: sceneConfig,
-      banner: false
+      banner: false,
+      // el sonido va por AudioFX: evita un segundo AudioContext de Phaser
+      audio: { noAudio: true }
     });
   }
 
