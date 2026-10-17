@@ -411,6 +411,7 @@ var Match = (function () {
     document.getElementById('ht-continue').onclick = function () {
       AudioFX.click();
       panel.classList.add('hidden');
+      if (!current) return; // the match already ended (e.g. skipped)
       current.enDescanso = false;
       current.engine.reanudar();
     };
