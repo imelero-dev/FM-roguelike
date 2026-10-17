@@ -250,7 +250,10 @@ var Gen = (function () {
     plantillaIA: plantillaIA,
     nivelDeRating: nivelDeRating,
     rarezaDrop: rarezaDrop,
-    nombreJugador: nombreJugador
+    nombreJugador: nombreJugador,
+    // id counter, persisted with the save so resumed runs never reuse card ids
+    getIdSeq: function () { return idSeq; },
+    setIdSeq: function (n) { idSeq = Math.max(idSeq, n | 0); }
   };
 })();
 

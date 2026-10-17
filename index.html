@@ -35,6 +35,8 @@
       <p class="game-subtitle">a football management roguelike</p>
       <p class="tagline">One season. One shot. Win the league or vanish.</p>
       <div class="menu-buttons">
+        <button id="btn-continue" class="btn btn-big btn-gold hidden">CONTINUE ▶</button>
+        <p id="continue-info" class="continue-info hidden"></p>
         <button id="btn-new-run" class="btn btn-big btn-gold">NEW RUN</button>
         <button id="btn-how" class="btn btn-ghost">How to play</button>
         <button id="btn-mute" class="btn btn-ghost btn-small">🔊 Sound</button>
@@ -214,7 +216,13 @@
     <div class="end-content">
       <h1 id="end-title"></h1>
       <p id="end-reason" class="end-reason"></p>
+      <div id="end-form" class="end-form" aria-label="Results by matchday"></div>
       <div id="end-stats" class="end-stats"></div>
+      <div id="end-awards" class="end-awards"></div>
+      <h3 class="end-section">📊 Squad stats</h3>
+      <div class="end-scroll"><table id="end-squad" class="league-table end-squad"></table></div>
+      <h3 class="end-section">🏁 Final table</h3>
+      <table id="end-table" class="league-table"></table>
       <button id="btn-end-menu" class="btn btn-big btn-gold">Back to menu</button>
     </div>
   </div>

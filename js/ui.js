@@ -200,6 +200,12 @@ var UI = (function () {
       ? 'Runs: <b>' + m.runs + '</b> · Titles: <b>' + m.victorias + '</b> · Best finish: <b>' +
         (m.mejorPuesto ? '#' + m.mejorPuesto : '—') + '</b>'
       : 'First run. Good luck, gaffer.';
+    var save = State.resumenPartida();
+    $('#btn-continue').classList.toggle('hidden', !save);
+    $('#continue-info').classList.toggle('hidden', !save);
+    $('#continue-info').textContent = save
+      ? save.equipo + ' · Matchday ' + save.jornada + '/14 · 💰 ' + save.oro
+      : '';
     showScreen('screen-menu');
   }
 
@@ -236,6 +242,8 @@ var UI = (function () {
     $('#btn-play-match').disabled = !completo;
     $('#btn-play-match').textContent = completo ? 'PLAY MATCH ▶' : 'PICK 11 PLAYERS';
     showScreen('screen-manage');
+    // autosave: every management change goes through here
+    State.guardarPartida('manage');
   }
 
   // ----- line-up (click-to-swap on the current formation) -----
@@ -484,9 +492,7 @@ var UI = (function () {
   }
 
   // ----- league -----
-  function renderLeague() {
-    var run = State.run;
-    var tabla = League.clasificacion();
+  function tablaHTML(tabla) {
     var html = '<tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>Pts</th></tr>';
     tabla.forEach(function (e, i) {
       html += '<tr class="' + (e.esJugador ? 'fila-jugador' : '') + (i < 4 ? ' top4' : '') + '">' +
@@ -495,7 +501,13 @@ var UI = (function () {
         '<td>' + e.pj + '</td><td>' + e.pg + '</td><td>' + e.pe + '</td><td>' + e.pp + '</td>' +
         '<td>' + e.gf + '</td><td>' + e.gc + '</td><td><b>' + e.pts + '</b></td></tr>';
     });
-    $('#league-table').innerHTML = html;
+    return html;
+  }
+
+  function renderLeague() {
+    var run = State.run;
+    var tabla = League.clasificacion();
+    $('#league-table').innerHTML = tablaHTML(tabla);
 
     // top scorers
     var goleadores = League.topScorers(6);
@@ -884,6 +896,32 @@ var UI = (function () {
     $('#end-stats').innerHTML = filas.map(function (f) {
       return '<div class="end-stat"><span>' + f[0] + '</span><b>' + f[1] + '</b></div>';
     }).join('');
+
+    var review = League.resumenTemporada();
+
+    // results strip, one chip per matchday (boss matches outlined)
+    $('#end-form').innerHTML = review.forma.map(function (r) {
+      var txt = { V: 'W', E: 'D', D: 'L' }[r.res];
+      return '<span class="res res-' + r.res + (r.jefe ? ' res-boss' : '') + '" title="MD' + r.jornada + ': ' +
+        r.gf + '-' + r.gc + ' vs ' + r.rival + '">' + txt + '</span>';
+    }).join('');
+
+    var awards = [
+      ['🏅', 'Player of the season', review.mejor ? review.mejor.nombre + ' (' + review.mejor.media.toFixed(2) + ')' : '—'],
+      ['⚽', 'Top scorer', review.goleador ? review.goleador.nombre + ' (' + review.goleador.goles + ')' : '—'],
+      ['🅰️', 'Top assists', review.asistente ? review.asistente.nombre + ' (' + review.asistente.asistencias + ')' : '—'],
+      ['👟', 'League top scorer', review.ligaGoleador ? review.ligaGoleador.nombre + ' (' + review.ligaGoleador.goles + ')' : '—']
+    ];
+    $('#end-awards').innerHTML = awards.map(function (a) {
+      return '<div class="end-award"><div class="ico">' + a[0] + '</div><div class="lbl">' + a[1] + '</div><b>' + a[2] + '</b></div>';
+    }).join('');
+
+    $('#end-squad').innerHTML = '<tr><th>Pos</th><th>Player</th><th>Apps</th><th>⚽</th><th>🅰️</th><th>Avg</th></tr>' +
+      review.plantilla.map(function (j) {
+        return '<tr><td>' + j.pos + '</td><td>' + j.nombre + '</td><td>' + j.pj + '</td><td>' + j.goles + '</td><td>' +
+          j.asistencias + '</td><td><b>' + (j.pj ? j.media.toFixed(2) : '—') + '</b></td></tr>';
+      }).join('');
+    $('#end-table').innerHTML = tablaHTML(League.clasificacion());
 
     if (fin.victoria) AudioFX.victoria(); else AudioFX.derrota();
     showScreen('screen-end');

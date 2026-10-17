@@ -1,31 +1,25 @@
-# MEJORAS — revisión para demo publicable
+# Improvements log
 
-## Cambios realizados
+## Round 2: Relegation Run (branch `mejoras-claude`)
 
-### Bugs corregidos
-- **Las expulsiones y las lesiones de 1 jornada no se cumplían nunca** (`js/main.js`). La baja se ponía al acabar el partido y se descontaba antes del siguiente, así que el jugador volvía a estar disponible. Ahora las bajas anteriores se descuentan *antes* de aplicar las nuevas: una roja o una lesión de N jornadas hace perder N partidos. Además, el expulsado sale del once, igual que ya pasaba con los lesionados.
-- **Se podía jugar con un sancionado o lesionado en el once** (`js/state.js`). `onceCompleto()` solo comprobaba que la carta existiera; ahora exige que esté disponible.
-- **Aceptar una contraoferta sin oro suficiente rompía la negociación** (`js/ui.js`). La sesión se cerraba y la siguiente oferta acababa en «no hay trato». Ahora avisa del oro disponible y deja seguir negociando.
-- **Mensaje de once incompleto poco útil** (`js/main.js`). Si a la formación actual le faltan efectivos (por bajas o ventas), el aviso indica que hay que cambiar de formación en Táctica o fichar.
+**Summary:** the game is now **Relegation Run — a football management roguelike**. It is fully in English, saves and resumes runs, ends each season with a review screen, and ships with an MIT license and a reference-style README. All tests pass.
 
-### Consola / carga
-- **Phaser se carga desde `lib/`** en lugar del CDN de jsDelivr con `document.write` como alternativa (`index.html`). Con este cambio el juego funciona abriendo `index.html` por `file://`, sin conexión y sin depender de terceros.
-- **El hover ya no crea el AudioContext** (`js/audio.js`). Antes, al pasar el ratón por una carta antes de cualquier clic, Chrome avisaba de que el AudioContext estaba bloqueado.
-- **Audio interno de Phaser desactivado** (`audio: { noAudio: true }` en `js/match.js`). El juego suena con `AudioFX`, así que Phaser ya no crea un segundo AudioContext.
+- **Rename and translation.** Every UI string, all match commentary, code comments, tests and docs are now English. Every old working title and every reference to commercial games is gone. The Spanish top-scorer term became "Top Scorers" (`run.topScorers`). Position codes are now GK/DEF/MID/FWD. Synergy tags are Academy/Superstar/Physical/Technical. Internal identifiers keep their Spanish names (documented in the README). The repo folder and remote were not touched.
+- **Save / resume.** There is one versioned autosave slot (`relegation-run:save`), written after every management action and when a match ends. The main menu shows **Continue** with the team, matchday and gold. Results are locked at full time, so reloading can't replay a match. If you reload on the post-match screen, the run moves on to the next matchday and the unclaimed reward is lost. The card-id counter is saved too, so resumed runs never reuse ids. Corrupt or outdated saves are ignored. **New Run** asks before overwriting a save, and the save is deleted when a run ends. The meta key moved from `rm_meta` to `relegation-run:meta`, with automatic migration.
+- **Season review.** The end screen now shows a results strip for every matchday (boss matches outlined), awards (player of the season, top scorer, top assists, league top scorer), a stats table for the whole squad and the final league table. The data comes from the pure function `League.resumenTemporada()`.
+- **Tests.** `tests/harness.js` is a shared headless boot that can simulate page reloads. `tests/save.js` has 9 tests covering save/resume, anti-replay, id safety, corrupt saves, overwrite confirmation, the season review and meta migration. I checked that they catch real bugs by breaking the code on purpose. `tests/smoke.js` now uses the harness.
+- **License and docs.** Added `LICENSE` (MIT) and `lib/LICENSE-phaser.txt`, plus a new English README (quick start, how to play, saving, features, architecture, storage keys, testing, roadmap, contributing). There are no secrets, no external requests and nothing was pushed.
 
-### Pruebas añadidas (sin dependencias)
-- `node tests/smoke.js [n]`: carga los módulos reales con un DOM simulado y juega `n` temporadas completas pulsando botones al azar (fichar, vender, formación, táctica, reroll, drops). Comprueba que no haya excepciones, que no se alinee a nadie no disponible, que las bajas se cumplan, que el oro no sea negativo, que no se supere el máximo de plantilla, que la jornada avance y que todos los equipos jueguen los mismos partidos. Resultado: 100 temporadas sin fallos.
-- `node --experimental-websocket tests/browser-check.js [chrome] [?query]`: abre `index.html` por `file://` en Chrome headless, juega dos partidos (uno visible con descanso y pizarra, otro saltado) y lista los errores y avisos de consola. Resultado: 0 errores y 0 avisos, tanto en escritorio como con `?mobile=1`. Los únicos avisos que aparecen son de WebGL por software, propios del entorno headless.
+## Round 1 (earlier)
 
-### Privacidad
-- En los archivos del proyecto no hay claves, tokens, emails ni datos personales, y no se hacen peticiones externas: el favicon es un SVG inline y los sprites y el sonido se generan en el propio juego. Solo se usa `localStorage` (`rm_meta`) para el récord de runs.
-- **Ojo:** el **historial de git** sí contiene un email personal como autor de commits. No lo he tocado (reescribir el historial es irreversible). Si se va a publicar el repositorio y no solo los archivos, conviene revisarlo.
+- Fixed suspensions and injuries that were never served, unavailable players being allowed in the XI, and accepting a counter-offer without enough gold.
+- Phaser is loaded from `lib/` (works from `file://` and offline), and the stray AudioContext warnings are gone.
+- Added the headless smoke test and the headless Chrome console check.
 
-## Pendiente para considerarlo terminado
-1. **Equilibrio de dificultad.** Con decisiones aleatorias, el test gana ~1 título de cada 100 temporadas. Falta jugarlo de verdad y ajustar el ritmo de oro, las rarezas y el crecimiento de los rivales (`League.cerrarJornada`).
-2. **Bloqueo extremo sin solución.** Si las bajas y las ventas dejan la plantilla sin efectivos para *ninguna* formación (p. ej. sin porteros disponibles) y no hay oro para fichar, no se puede jugar. La venta solo protege la formación actual y las rojas no tienen salvaguarda. En el test no ha ocurrido, pero es posible.
-3. **No se guarda la run en curso.** Al recargar la página se pierde la temporada; solo se conserva el récord en `localStorage`.
-4. **Marca y nombre.** El juego cita «Football Manager» en README/comentarios y usa el término «Pichichi». Hay que revisarlo antes de publicar (no se ha tocado, según lo indicado).
-5. **Licencias.** Falta un archivo LICENSE propio y el aviso de la licencia MIT de Phaser incluido en `lib/`.
-6. **Accesibilidad y teclado.** La UI depende del ratón/táctil: no hay foco visible en las cartas, `Esc` no cierra los modales y no hay textos alternativos más allá de los emojis.
-7. **Pruebas en navegadores reales.** Solo se ha probado en Chrome headless; falta probarlo en Safari/iOS y Firefox, sobre todo la capa móvil y el desbloqueo de WebAudio en iOS.
+## Still open
+
+1. Difficulty balancing from real play: random play wins about 1 title in 30–100 seasons.
+2. A rare deadlock: injuries and sales can leave no playable formation and no gold to sign anyone.
+3. Accessibility: keyboard focus, `Esc` to close modals.
+4. Testing on real Safari/iOS and Firefox devices.
+5. The git history contains the author's GitHub noreply address. Review it before making the repository public.

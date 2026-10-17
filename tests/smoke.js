@@ -7,112 +7,16 @@
    formation, tactics, drops) and checks invariants.
    ============================================================ */
 'use strict';
-var fs = require('fs');
-var path = require('path');
-var vm = require('vm');
+var harness = require('./harness');
 
-var ROOT = path.join(__dirname, '..');
 var N_RUNS = parseInt(process.argv[2], 10) || 20;
 
-// ---------- minimal DOM ----------
-var creados = [];
-function Elem(tag, id) {
-  this.tagName = (tag || 'div').toUpperCase();
-  this.id = id || '';
-  this.className = '';
-  this.innerHTML = '';
-  this.textContent = '';
-  this.style = {};
-  this.dataset = {};
-  this.children = [];
-  this.value = '50'; this.min = '0'; this.max = '100';
-  this.disabled = false;
-  this.onclick = null;
-  var self = this;
-  this.classList = {
-    _s: {},
-    add: function () { for (var i = 0; i < arguments.length; i++) this._s[arguments[i]] = 1; },
-    remove: function (c) { delete this._s[c]; },
-    toggle: function (c, f) { if (f === undefined) f = !this._s[c]; if (f) this._s[c] = 1; else delete this._s[c]; },
-    contains: function (c) { return !!this._s[c] || (' ' + self.className + ' ').indexOf(' ' + c + ' ') >= 0; }
-  };
-  creados.push(this);
-}
-Elem.prototype.appendChild = function (c) { this.children.push(c); c.parent = this; return c; };
-Elem.prototype.insertBefore = function (c) { this.children.unshift(c); return c; };
-Elem.prototype.removeChild = function (c) { this.children = this.children.filter(function (x) { return x !== c; }); };
-Elem.prototype.remove = function () {};
-Elem.prototype.querySelector = function () { return new Elem('button'); };
-Elem.prototype.querySelectorAll = function () { return []; };
-Elem.prototype.addEventListener = function () {};
-Elem.prototype.click = function () {};
-Elem.prototype.dispatchEvent = function () {};
-Object.defineProperty(Elem.prototype, 'firstChild', { get: function () { return this.children[0]; } });
-Object.defineProperty(Elem.prototype, 'lastChild', { get: function () { return this.children[this.children.length - 1]; } });
-
-var porId = {};
-function byId(id) { return porId[id] || (porId[id] = new Elem('div', id)); }
-
-var domReady = [];
-var document = {
-  getElementById: byId,
-  querySelector: function (sel) { return sel.charAt(0) === '#' ? byId(sel.slice(1)) : new Elem('div'); },
-  querySelectorAll: function () { return []; },
-  createElement: function (t) { return new Elem(t); },
-  addEventListener: function (ev, fn) { if (ev === 'DOMContentLoaded') domReady.push(fn); },
-  documentElement: new Elem('html')
-};
-
-// deterministic timers: a queue drained by hand
-var timers = [];
-function setTimeoutFake(fn) { timers.push(fn); return timers.length; }
-function drenar() {
-  var guard = 0;
-  while (timers.length && guard++ < 10000) timers.shift()();
-}
-
-var consola = { errores: [] };
-var ctx = {
-  console: console,
-  Math: Math, JSON: JSON, Object: Object, Array: Array, String: String, Number: Number,
-  parseInt: parseInt, isNaN: isNaN,
-  document: document,
-  window: {},
-  navigator: { userAgent: 'node', maxTouchPoints: 0 },
-  location: { search: '' },
-  localStorage: (function () {
-    var s = {};
-    return {
-      getItem: function (k) { return k in s ? s[k] : null; },
-      setItem: function (k, v) { s[k] = String(v); },
-      removeItem: function (k) { delete s[k]; }
-    };
-  })(),
-  setTimeout: setTimeoutFake,
-  clearTimeout: function () {},
-  setInterval: function () { return 0; },
-  clearInterval: function () {},
-  requestAnimationFrame: function () {},
-  scrollTo: function () {},
-  Event: function () {},
-  // stubs for canvas/WebAudio modules
-  Sprite: { avatar: function () { return 'data:'; }, img: function () { return new Elem('img'); } },
-  AudioFX: new Proxy({}, { get: function (t, k) { return k === 'toggleMute' ? function () { return true; } : function () {}; } })
-};
-ctx.window = ctx;
-vm.createContext(ctx);
-
-['attrs', 'formations', 'gen', 'synergy', 'engine', 'state', 'league', 'economy', 'nego', 'ui', 'mobile', 'match', 'main']
-  .forEach(function (f) {
-    var file = path.join(ROOT, 'js', f + '.js');
-    vm.runInContext(fs.readFileSync(file, 'utf8'), ctx, { filename: file });
-  });
-domReady.forEach(function (fn) { fn(); });
-
-function click(id) { var e = byId(id); if (!e.onclick) throw new Error('#' + id + ' has no onclick'); e.onclick({ stopPropagation: function () {} }); drenar(); }
-function botones(clase) {
-  return creados.filter(function (e) { return (' ' + e.className + ' ').indexOf(' ' + clase + ' ') >= 0 && e.onclick; });
-}
+var h = harness.boot();
+var ctx = h.ctx;
+var byId = h.byId;
+var click = h.click;
+var drenar = h.drain;
+var botones = h.buttons;
 function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
 function assert(cond, msg) { if (!cond) throw new Error('Invariant: ' + msg); }
 
@@ -121,10 +25,12 @@ var resumen = { runs: 0, titles: 0, matchdays: 0, goals: 0, suspensions: 0, inju
 
 for (var r = 0; r < N_RUNS; r++) {
   click('btn-new-run');
+  // a run that ended in a deadlock leaves a save behind: confirm the overwrite
+  if (byId('confirm-yes').onclick) click('confirm-yes');
   var S = ctx.State;
   var jornadasRun = 0;
   while (!S.run.terminada && jornadasRun < 20) {
-    creados = [];
+    h.resetCreated();
     // re-render to get fresh buttons
     ctx.UI.renderManage();
 
@@ -173,7 +79,7 @@ for (var r = 0; r < N_RUNS; r++) {
     });
 
     var jornadaAntes = S.run.jornada;
-    creados = [];
+    h.resetCreated();
     click('btn-play-match'); // Match without Phaser → skip → renderPost
 
     var bajas = [];

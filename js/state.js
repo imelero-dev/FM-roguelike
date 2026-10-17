@@ -238,6 +238,62 @@ var State = (function () {
     try { localStorage.setItem(META_KEY, JSON.stringify(m)); } catch (e) { /* no storage */ }
   }
 
+
+  // ---- save / resume ----
+  // One autosave slot. The run is plain JSON (cards are referenced by id), so it
+  // round-trips losslessly. `phase` is 'manage' (between matches) or 'post'
+  // (result already applied, waiting for the player to continue).
+  var SAVE_KEY = 'relegation-run:save';
+  var SAVE_VERSION = 1;
+
+  function guardarPartida(phase) {
+    if (!run || run.terminada) return false;
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify({
+        version: SAVE_VERSION,
+        savedAt: Date.now(),
+        phase: phase || 'manage',
+        idSeq: Gen.getIdSeq(),
+        run: run
+      }));
+      return true;
+    } catch (e) { return false; /* storage full or disabled */ }
+  }
+
+  function leerPartida() {
+    try {
+      var raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      var r = data && data.run;
+      if (data.version !== SAVE_VERSION || !r || r.terminada ||
+          !Array.isArray(r.plantilla) || !Array.isArray(r.equipos) || !r.tactica ||
+          typeof r.jornada !== 'number' || r.jornada < 1 || r.jornada > r.calendario.length) {
+        return null;
+      }
+      return data;
+    } catch (e) { return null; }
+  }
+
+  // Lightweight summary for the menu's "Continue" button
+  function resumenPartida() {
+    var d = leerPartida();
+    if (!d) return null;
+    return { equipo: d.run.equipos[0].nombre, jornada: d.run.jornada, oro: d.run.oro, savedAt: d.savedAt };
+  }
+
+  function cargarPartida() {
+    var d = leerPartida();
+    if (!d) { borrarPartida(); return null; }
+    run = d.run;
+    Gen.setIdSeq(d.idSeq || 0);
+    return d.phase;
+  }
+
+  function borrarPartida() {
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* no storage */ }
+  }
+
   return {
     get run() { return run; },
     MAX_PLANTILLA: MAX_PLANTILLA,
@@ -267,7 +323,12 @@ var State = (function () {
     rivalActual: rivalActual,
     salarioTotal: salarioTotal,
     meta: meta,
-    guardarMeta: guardarMeta
+    guardarMeta: guardarMeta,
+    SAVE_KEY: SAVE_KEY,
+    guardarPartida: guardarPartida,
+    cargarPartida: cargarPartida,
+    resumenPartida: resumenPartida,
+    borrarPartida: borrarPartida
   };
 })();
 

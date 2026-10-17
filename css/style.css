@@ -626,6 +626,31 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .end-stat:last-child { border-bottom: none; }
 .end-stat b { color: var(--gold); }
 
+/* season review */
+#screen-end { overflow-y: auto; }
+.continue-info { color: var(--muted); font-size: 13px; margin: -6px 0 4px; }
+.end-form { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-bottom: 22px; }
+.end-form .res {
+  width: 30px; height: 30px; border-radius: 7px; display: grid; place-items: center;
+  font-weight: 800; font-size: 13px; color: #10101a; box-shadow: 0 3px 0 rgba(0,0,0,0.35);
+}
+.end-form .res-V { background: #4ade80; }
+.end-form .res-E { background: #ffd54a; }
+.end-form .res-D { background: #ff6b5c; }
+.end-form .res-boss { outline: 2px solid #fff; outline-offset: 1px; }
+.end-awards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 26px; }
+.end-award {
+  background: var(--panel); border: 3px solid var(--border); border-radius: 12px;
+  box-shadow: 0 5px 0 var(--border-dark); padding: 12px; text-align: center;
+}
+.end-award .ico { font-size: 26px; }
+.end-award .lbl { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+.end-award b { display: block; color: var(--gold); margin-top: 4px; }
+.end-section { text-align: left; margin: 0 0 10px; }
+.end-scroll { overflow-x: auto; margin-bottom: 26px; }
+.end-squad td:nth-child(2) { text-align: left; }
+#end-table { margin-bottom: 26px; }
+
 /* ---------- modals ---------- */
 .modal {
   position: fixed; inset: 0; z-index: 50;

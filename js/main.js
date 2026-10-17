@@ -112,6 +112,10 @@
 
     var drop = Economy.generarDrop(rival, esJefe, res === 'V');
 
+    // the result is final from here on: reloading now resumes after the match
+    // (the unclaimed reward is forfeited) instead of letting the match be replayed
+    State.guardarPartida('post');
+
     UI.renderPost({
       gf: gf, gc: gc, resultado: res, rival: rival, esJefe: esJefe,
       oroTotal: oroTotal,
@@ -134,6 +138,7 @@
     var fin = League.comprobarFin();
     if (fin) {
       run.terminada = true;
+      State.borrarPartida();
       State.guardarMeta({ victoria: fin.victoria, puesto: fin.puesto, pg: run.stats.pg });
       UI.renderEnd(fin);
       return;
@@ -155,12 +160,33 @@
     UI.renderManage();
   }
 
+  function continuarRun() {
+    var phase = State.cargarPartida();
+    if (!phase) {
+      UI.toast('The saved run could not be loaded', 'error');
+      UI.renderMenu();
+      return;
+    }
+    UI.resetSeleccion();
+    if (phase === 'post') continuarTrasPartido();
+    else UI.renderManage();
+    if (!State.run.terminada) UI.toast('Welcome back, gaffer. Matchday ' + State.run.jornada + '.');
+  }
+
   function init() {
     UI.init();
 
     document.getElementById('btn-new-run').onclick = function () {
       AudioFX.click();
-      nuevaRun();
+      if (State.resumenPartida()) {
+        UI.confirmar('Start a new run? Your saved run will be lost.', nuevaRun);
+      } else {
+        nuevaRun();
+      }
+    };
+    document.getElementById('btn-continue').onclick = function () {
+      AudioFX.click();
+      continuarRun();
     };
     document.getElementById('btn-how').onclick = function () {
       AudioFX.click();

@@ -110,7 +110,55 @@ var League = (function () {
     return null;
   }
 
+  // Season review data for the end screen (pure: reads the run, changes nothing)
+  function resumenTemporada() {
+    var run = State.run;
+    var forma = [];
+    run.resultados.forEach(function (jornada, j) {
+      var r = jornada.filter(function (x) { return x.jugador; })[0];
+      if (!r) return;
+      var local = r.h === 0;
+      var gf = local ? r.gh : r.ga, gc = local ? r.ga : r.gh;
+      forma.push({
+        jornada: j + 1, gf: gf, gc: gc,
+        res: gf > gc ? 'V' : gf < gc ? 'D' : 'E',
+        rival: run.equipos[local ? r.a : r.h].nombre,
+        jefe: State.esJefe(j + 1)
+      });
+    });
+
+    var plantilla = run.plantilla.map(function (c) {
+      var t = c.temporada;
+      return {
+        id: c.id, nombre: c.nombre, pos: c.pos, pj: t.pj, goles: t.goles, asistencias: t.asistencias,
+        media: t.pj ? t.ratingTotal / t.pj : 0
+      };
+    });
+    var orden = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
+    plantilla.sort(function (a, b) { return (orden[a.pos] - orden[b.pos]) || (b.pj - a.pj); });
+
+    function mejorPor(campo, minimo) {
+      var best = null;
+      plantilla.forEach(function (j) {
+        if (j.pj >= minimo && j[campo] > 0 && (!best || j[campo] > best[campo])) best = j;
+      });
+      return best;
+    }
+    // player of the season needs a third of the matches played to qualify
+    var minPj = Math.max(1, Math.ceil(forma.length / 3));
+
+    return {
+      forma: forma,
+      plantilla: plantilla,
+      mejor: mejorPor('media', minPj),
+      goleador: mejorPor('goles', 1),
+      asistente: mejorPor('asistencias', 1),
+      ligaGoleador: topScorers(1)[0] || null
+    };
+  }
+
   return {
+    resumenTemporada: resumenTemporada,
     cerrarJornada: cerrarJornada,
     clasificacion: clasificacion,
     topScorers: topScorers,
