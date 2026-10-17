@@ -5,6 +5,7 @@
    visible match (half-time included) and lists any console
    error or warning. Exits with code 1 if there are errors.
    Matches DOM by id/class only, never by UI text.
+   Optional env: SCREENSHOT_DIR (save PNGs), WINDOW_SIZE (e.g. 844,390).
    ============================================================ */
 'use strict';
 var path = require('path');
@@ -22,7 +23,7 @@ var perfil = fs.mkdtempSync(path.join(os.tmpdir(), 'relegation-run-chrome-'));
 var chrome = spawn(CHROME, [
   '--headless=new', '--no-sandbox', '--disable-gpu', '--mute-audio',
   '--user-data-dir=' + perfil, '--remote-debugging-port=' + PORT,
-  '--window-size=1280,900', 'about:blank'
+  '--window-size=' + (process.env.WINDOW_SIZE || '1280,900'), 'about:blank'
 ], { stdio: 'ignore' });
 
 function getJSON(url) {
@@ -109,6 +110,18 @@ function esperar(ms) { return new Promise(function (r) { setTimeout(r, ms); }); 
     // half-time team talk / tactics board
     if (partido === 1) { await esperar(6000); await shot('match'); }
     await hasta('!document.getElementById("ht-panel").classList.contains("hidden")', 60000);
+    // half-time card: score, possession, shots, xG, top performer and key moments
+    var ht = JSON.parse(await js('JSON.stringify({' +
+      'score: document.getElementById("ht-marcador").textContent,' +
+      'stats: ["posesion","tiros","xg"].filter(function(s){var r=document.querySelector("#ht-stats [data-stat=" + s + "]"); return r && /\\d/.test(r.textContent)}).length,' +
+      'top: (document.querySelector("#ht-top .ht-top-name")||{}).textContent || "",' +
+      'nota: (document.querySelector("#ht-top .ht-top-nota")||{}).textContent || "",' +
+      'moments: document.querySelectorAll("#ht-momentos .ht-moment").length})'));
+    if (!/^\d+ - \d+$/.test(ht.score)) problemas.push('HALF-TIME: bad score "' + ht.score + '"');
+    if (ht.stats !== 3) problemas.push('HALF-TIME: possession/shots/xG rows missing');
+    if (!ht.top || !/^\d+\.\d$/.test(ht.nota)) problemas.push('HALF-TIME: top performer missing');
+    if (ht.moments < 1 || ht.moments > 2) problemas.push('HALF-TIME: expected 1-2 key moment rows, got ' + ht.moments);
+    if (partido === 1) await shot('half-time');
     await js('document.querySelector("#ht-mentalidad .seg-btn").click(); document.getElementById("ht-continue").click()');
     if (partido === 2) await js('document.getElementById("btn-skip").click()');
     ok = await hasta('document.getElementById("screen-post").classList.contains("active")', 60000);
