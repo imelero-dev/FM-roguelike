@@ -982,8 +982,10 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
   text-transform: uppercase; letter-spacing: 0.04em; animation: titlePop 0.6s ease;
 }
 .end-card { margin-bottom: 26px; }
+/* the landscape card is wider than the end column: let it break out, centred */
+.end-card .card-frame { width: min(800px, calc(100vw - 32px)); max-width: none; margin-left: 50%; transform: translateX(-50%); }
 .card-frame {
-  width: min(360px, 100%); margin: 0 auto 14px; aspect-ratio: 4 / 5;
+  width: min(600px, 100%); margin: 0 auto 14px; aspect-ratio: 1200 / 630;
   border-radius: 14px; overflow: hidden;
   box-shadow: 0 6px 0 var(--border-dark), 0 18px 50px rgba(0,0,0,0.55);
 }
@@ -993,7 +995,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .end-rank b { color: var(--gold); }
 .end-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 .btn:focus-visible, .hall-row:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
-.card-box { width: min(440px, 94vw); text-align: center; position: relative; }
+.card-box { width: min(680px, 94vw); text-align: center; position: relative; }
 .card-box h3 { padding-right: 30px; }
 
 /* ---------- Hall of Fame ---------- */

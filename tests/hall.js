@@ -84,7 +84,8 @@ function entry(o) {
     formacion: '4-3-3', jefes: 2, oro: 500,
     mvp: o.mvp === null ? null : { nombre: 'Leo Marsh', id: 'c12', pos: 'MID', media: 7.84 },
     goleador: { nombre: 'Kai Rowe', id: 'c13', pos: 'FWD', goles: 11 },
-    asistente: { nombre: 'Tom Hale', id: 'c14', pos: 'MID', asistencias: 1 }
+    asistente: { nombre: 'Tom Hale', id: 'c14', pos: 'MID', asistencias: 1 },
+    xi: o.xi === null ? undefined : { legendaria: 1, epica: 2, rara: 5, comun: 3 }
   };
   return e;
 }
@@ -113,6 +114,15 @@ function fakeCanvas() {
   };
 }
 
+// every text call stays inside the inner frame (6px border inset 14px)
+function insideFrame(cv) {
+  cv.calls.text.forEach(function (c) {
+    var left = c.align === 'center' ? c.x - c.w / 2 : c.align === 'right' ? c.x - c.w : c.x;
+    assert.ok(left >= 28 && left + c.w <= 1172, '"' + c.s + '" overflows (' + Math.round(left) + '..' + Math.round(left + c.w) + ')');
+    assert.ok(c.y > 28 && c.y < 616, '"' + c.s + '" is outside the frame vertically');
+  });
+}
+
 function texts(cv) { return cv.calls.text.map(function (t) { return t.s; }); }
 
 // ================================================================
@@ -132,6 +142,9 @@ test('a finished run is recorded once, with the season it actually played', func
   assert.strictEqual(e.puesto, h.ctx.League.puestoJugador());
   assert.strictEqual(e.numero, h.ctx.State.meta().runs);
   assert.strictEqual(e.jornadas, 14);
+  // rarity breakdown of the final starting XI
+  var xi = e.xi.legendaria + e.xi.epica + e.xi.rara + e.xi.comun;
+  assert.ok(xi > 0 && xi <= 11, 'final XI rarities recorded');
   // the end screen reports the rank and draws (or tries to draw) the card
   assert.ok(/Ranked <b>#1<\/b> of 1/.test(h.byId('end-rank').innerHTML));
 
@@ -293,27 +306,24 @@ test('the share text is a compact, Wordle-style summary', function () {
   assert.ok(/Finished 3rd/.test(C.texto(entry({ puesto: 3 }))));
 });
 
-test('the card draws every element inside the 1080×1350 frame', function () {
+test('the card draws every element inside the 1200×630 frame', function () {
   var C = harness.boot().ctx.SeasonCard;
   var e = entry({ victoria: true, puesto: 1, numero: 12 });
   var cv = fakeCanvas();
   assert.strictEqual(C.dibujar(cv, e, { rank: 1, total: 4, records: [{ key: 'first-title', label: 'First title' }] }), true);
-  assert.strictEqual(cv.width, 1080);
-  assert.strictEqual(cv.height, 1350);
+  assert.strictEqual(cv.width, 1200);
+  assert.strictEqual(cv.height, 630);
   var t = texts(cv);
-  ['RELEGATION', 'RUN', 'A FOOTBALL MANAGEMENT ROGUELIKE', 'RUN #12', 'ATHLETIC NORTHPORT', 'CHAMPIONS',
+  ['RELEGATION', 'RUN', 'A FOOTBALL ROGUELIKE', 'RUN #12', 'ATHLETIC NORTHPORT', 'CHAMPIONS',
    '1st', String(e.pts), 'Leo Marsh', 'Kai Rowe', '11 goals', 'Tom Hale', '1 assist',
-   '★ FIRST TITLE', 'Hall of Fame #1 of 4', 'ONE SEASON. ONE SHOT.'].forEach(function (s) {
+   '★ FIRST TITLE', 'FINAL XI', 'LEGENDARY', 'EPIC', 'RARE', 'COMMON', 'outlined = boss match', 'Hall of Fame #1 of 4', 'ONE SEASON. ONE SHOT.'].forEach(function (s) {
     assert.ok(t.indexOf(s) >= 0, 'missing on card: ' + s);
   });
   e.forma.forEach(function (f) { assert.ok(t.indexOf(f.gf + '-' + f.gc) >= 0); });
   assert.strictEqual(t.filter(function (s) { return /^\d+-\d+$/.test(s); }).length, 14 + 0, 'one score per matchday');
-  // nothing spills past the side margins
-  cv.calls.text.forEach(function (c) {
-    var left = c.align === 'center' ? c.x - c.w / 2 : c.align === 'right' ? c.x - c.w : c.x;
-    assert.ok(left >= 40 && left + c.w <= 1040, '"' + c.s + '" overflows (' + Math.round(left) + '..' + Math.round(left + c.w) + ')');
-    assert.ok(c.y > 40 && c.y < 1320, '"' + c.s + '" is outside the frame vertically');
-  });
+  insideFrame(cv);
+  // Relegation Run branding only
+  t.forEach(function (s) { assert.ok(!/football manager|pichichi/i.test(s), 'off-brand wording: ' + s); });
   assert.ok(/Season card: Athletic Northport, champions\. 1st place/.test(cv.attrs['aria-label']));
   assert.strictEqual(cv.attrs.role, 'img');
 });
@@ -323,11 +333,9 @@ test('long names shrink or get an ellipsis instead of overflowing', function () 
   var e = entry({ nombre: 'Sporting Club Extraordinarily Long Name Of Northporthampton-upon-Sea' });
   e.mvp.nombre = 'Maximilian-Alexander Wolfeschlegelsteinhausen';
   var cv = fakeCanvas();
-  C.dibujar(cv, e, null);
-  cv.calls.text.forEach(function (c) {
-    var left = c.align === 'center' ? c.x - c.w / 2 : c.align === 'right' ? c.x - c.w : c.x;
-    assert.ok(left + c.w <= 1040, '"' + c.s + '" overflows');
-  });
+  e.goleador.nombre = 'Bartholomew Featherstonehaugh-Cholmondeley';
+  C.dibujar(cv, e, { rank: 3, total: 20, records: [{ label: 'Best finish' }, { label: 'Most points' }, { label: 'Longest win streak (9)' }] });
+  insideFrame(cv);
   assert.ok(texts(cv).some(function (s) { return /…$/.test(s); }), 'long team name truncated');
   assert.ok(texts(cv).indexOf('FINISHED 2ND') >= 0);
 });
@@ -340,6 +348,16 @@ test('a sacked run shows empty slots for the matchdays it never reached', functi
   assert.ok(t.indexOf('SACKED') >= 0);
   assert.strictEqual(t.filter(function (s) { return /^\d+-\d+$/.test(s); }).length, 3);
   assert.strictEqual(cv.calls.images, 0, 'no portrait without a player of the season');
+  assert.ok(t.indexOf('outlined = boss match') < 0, 'no boss legend without a boss match');
+});
+
+test('cards stored before the final XI was recorded still draw', function () {
+  var C = harness.boot().ctx.SeasonCard;
+  var cv = fakeCanvas();
+  assert.strictEqual(C.dibujar(cv, entry({ xi: null }), null), true);
+  var t = texts(cv);
+  assert.ok(t.indexOf('FINAL XI') >= 0 && t.indexOf('LEGENDARY') < 0);
+  insideFrame(cv);
 });
 
 test('the card is a no-op without a 2D canvas, and files get a clean name', function () {

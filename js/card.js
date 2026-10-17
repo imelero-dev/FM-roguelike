@@ -1,6 +1,6 @@
 /* ============================================================
    CARD — the shareable season card.
-   Draws a 1080x1350 (4:5, the feed-friendly portrait size) PNG of
+   Draws a 1200x630 (1.91:1, the link-preview / feed size) PNG of
    a Hall of Fame entry on a canvas, builds a spoiler-free text
    version with an emoji results strip, and shares either through
    the Web Share API, a PNG download or the clipboard. Everything
@@ -9,7 +9,9 @@
 
 var SeasonCard = (function () {
 
-  var W = 1080, H = 1350, PAD = 72;
+  // 1200x630 (1.91:1): the size link previews and most feeds expect.
+  // Two columns: the result on the left (LW wide), the people on the right (from RX).
+  var W = 1200, H = 630, PAD = 48, LW = 500, RX = 588;
   var C = {
     bg: '#100e18', panel: '#201c2e', panel2: '#2a2540', border: '#3a3358',
     text: '#eae8f2', muted: '#8f8aa8', gold: '#ffd54a', accent: '#7c5cff',
@@ -18,6 +20,7 @@ var SeasonCard = (function () {
   var FONT = "'Arial Black', 'Segoe UI Black', Impact, sans-serif";
   var FONT_TXT = "'Segoe UI', system-ui, -apple-system, Roboto, sans-serif";
   var RES_COLOR = { V: C.win, E: C.draw, D: C.loss };
+  var RAREZAS = [['legendaria', 'LEGENDARY', '#f59e0b'], ['epica', 'EPIC', '#a855f7'], ['rara', 'RARE', '#3b82f6'], ['comun', 'COMMON', '#8a919e']];
 
   // ---- small helpers (pure) ----
   function ordinal(n) {
@@ -124,13 +127,14 @@ var SeasonCard = (function () {
     ctx.fillText(txt, x, y);
   }
 
-  function panel(ctx, x, y, w, h, borde) {
+  function panel(ctx, x, y, w, h, borde, r) {
+    r = r || 18;
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    rrect(ctx, x, y + 8, w, h, 22); ctx.fill();
+    rrect(ctx, x, y + 6, w, h, r); ctx.fill();
     ctx.fillStyle = C.panel;
-    rrect(ctx, x, y, w, h, 22); ctx.fill();
-    ctx.lineWidth = 4; ctx.strokeStyle = borde || C.border;
-    rrect(ctx, x, y, w, h, 22); ctx.stroke();
+    rrect(ctx, x, y, w, h, r); ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = borde || C.border;
+    rrect(ctx, x, y, w, h, r); ctx.stroke();
   }
 
   function fondo(ctx, e) {
@@ -139,37 +143,36 @@ var SeasonCard = (function () {
     ctx.fillRect(0, 0, W, H);
 
     // club-coloured glow and a diagonal sash
-    var glow = ctx.createRadialGradient(W * 0.85, 120, 40, W * 0.85, 120, 820);
+    var glow = ctx.createRadialGradient(W * 0.2, H * 0.35, 30, W * 0.2, H * 0.35, 620);
     glow.addColorStop(0, club);
     glow.addColorStop(1, 'rgba(16,14,24,0)');
-    ctx.globalAlpha = 0.32; ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = 0.10; ctx.fillStyle = club;
-    ctx.beginPath(); ctx.moveTo(W * 0.55, 0); ctx.lineTo(W, 0); ctx.lineTo(W, H * 0.42); ctx.lineTo(0, H * 0.95); ctx.lineTo(0, H * 0.72);
+    ctx.globalAlpha = 0.30; ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 0.09; ctx.fillStyle = club;
+    ctx.beginPath(); ctx.moveTo(W * 0.38, 0); ctx.lineTo(W * 0.62, 0); ctx.lineTo(W * 0.42, H); ctx.lineTo(W * 0.18, H);
     ctx.closePath(); ctx.fill();
     ctx.globalAlpha = 1;
 
-    // faint halfway line and centre circle
-    ctx.strokeStyle = 'rgba(255,255,255,0.045)'; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.arc(W / 2, H - 40, 210, Math.PI, 2 * Math.PI); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, H - 40); ctx.lineTo(W, H - 40); ctx.stroke();
+    // faint centre circle behind the footer
+    ctx.strokeStyle = 'rgba(255,255,255,0.045)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(W / 2, H - 20, 130, Math.PI, 2 * Math.PI); ctx.stroke();
 
     // frame: gold for champions
-    ctx.lineWidth = 8; ctx.strokeStyle = e.victoria ? C.gold : C.border;
-    rrect(ctx, 22, 22, W - 44, H - 44, 36); ctx.stroke();
+    ctx.lineWidth = 6; ctx.strokeStyle = e.victoria ? C.gold : C.border;
+    rrect(ctx, 14, 14, W - 28, H - 28, 26); ctx.stroke();
   }
 
   function cabecera(ctx, e) {
-    font(ctx, 46, true);
-    rotulo(ctx, 'RELEGATION', PAD, 118, C.gold);
+    font(ctx, 34, true);
+    rotulo(ctx, 'RELEGATION', PAD, 76, C.gold);
     var w = ctx.measureText('RELEGATION ').width;
-    rotulo(ctx, 'RUN', PAD + w, 118, C.accent);
-    font(ctx, 20, false);
-    rotulo(ctx, 'A FOOTBALL MANAGEMENT ROGUELIKE', PAD, 152, C.muted);
+    rotulo(ctx, 'RUN', PAD + w, 76, C.accent);
+    font(ctx, 15, false);
+    rotulo(ctx, 'A FOOTBALL ROGUELIKE', PAD, 102, C.muted);
 
-    font(ctx, 30, true);
-    rotulo(ctx, e.numero ? 'RUN #' + e.numero : 'SEASON', W - PAD, 112, C.text, 'right');
-    font(ctx, 22, false);
-    rotulo(ctx, fechaISO(e.fecha), W - PAD, 148, C.muted, 'right');
+    font(ctx, 24, true);
+    rotulo(ctx, e.numero ? 'RUN #' + e.numero : 'SEASON', W - PAD, 72, C.text, 'right');
+    font(ctx, 16, false);
+    rotulo(ctx, fechaISO(e.fecha), W - PAD, 98, C.muted, 'right');
   }
 
   function escudo(ctx, e, x, y, s) {
@@ -183,33 +186,34 @@ var SeasonCard = (function () {
       ctx.quadraticCurveTo(x, y + s * 0.95, x, y + s * 0.55);
       ctx.closePath();
     }
-    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.save(); ctx.translate(0, 8); forma(); ctx.fill(); ctx.restore();
+    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.save(); ctx.translate(0, 6); forma(); ctx.fill(); ctx.restore();
     ctx.fillStyle = club; forma(); ctx.fill();
     // a darker half for depth
     ctx.save(); forma(); ctx.clip();
     ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(x + s / 2, y, s / 2, s * 1.2);
     ctx.restore();
-    ctx.lineWidth = 6; ctx.strokeStyle = e.victoria ? C.gold : '#f0f0f5'; forma(); ctx.stroke();
+    ctx.lineWidth = 5; ctx.strokeStyle = e.victoria ? C.gold : '#f0f0f5'; forma(); ctx.stroke();
     font(ctx, Math.round(s * 0.36), true);
     ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.textAlign = 'center';
-    ctx.fillText(iniciales(e.equipo.nombre), x + s / 2 + 3, y + s * 0.62 + 3);
+    ctx.fillText(iniciales(e.equipo.nombre), x + s / 2 + 2, y + s * 0.62 + 2);
     ctx.fillStyle = '#fff';
     ctx.fillText(iniciales(e.equipo.nombre), x + s / 2, y + s * 0.62);
   }
 
+  // left column: crest, club, verdict
   function titular(ctx, e, v) {
-    var cx = PAD + 190, maxW = W - PAD - cx;
-    escudo(ctx, e, PAD, 214, 160);
-    ajustar(ctx, e.equipo.nombre.toUpperCase(), maxW, 64, 36, true);
-    rotulo(ctx, recortar(ctx, e.equipo.nombre.toUpperCase(), maxW), cx, 276, legible(e.equipo.color));
+    var cx = PAD + 120, maxW = PAD + LW - cx;
+    escudo(ctx, e, PAD, 132, 96);
+    ajustar(ctx, e.equipo.nombre.toUpperCase(), maxW, 32, 18, true);
+    rotulo(ctx, recortar(ctx, e.equipo.nombre.toUpperCase(), maxW), cx, 170, legible(e.equipo.color));
 
     // verdict banner
-    ajustar(ctx, v.titulo, maxW, 92, 50, true);
+    ajustar(ctx, v.titulo, maxW, 58, 28, true);
     ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.textAlign = 'left';
-    ctx.fillText(v.titulo, cx + 4, 376 + 6);
-    rotulo(ctx, v.titulo, cx, 376, v.color);
-    font(ctx, 26, false);
-    rotulo(ctx, v.linea + ' · ' + e.formacion, cx, 420, C.muted);
+    ctx.fillText(v.titulo, cx + 3, 232 + 4);
+    rotulo(ctx, v.titulo, cx, 232, v.color);
+    font(ctx, 18, false);
+    rotulo(ctx, recortar(ctx, v.linea + ' · ' + e.formacion, LW), PAD, 278, C.muted);
   }
 
   function tiles(ctx, e) {
@@ -219,111 +223,141 @@ var SeasonCard = (function () {
       ['W · D · L', e.pg + '-' + e.pe + '-' + e.pp],
       ['GOALS', e.gf + ':' + e.gc]
     ];
-    var gap = 24, w = (W - PAD * 2 - gap * 3) / 4, y = 470, h = 160;
+    var gap = 12, w = (LW - gap * 3) / 4, y = 304, h = 96;
     datos.forEach(function (d, i) {
       var x = PAD + i * (w + gap);
-      panel(ctx, x, y, w, h, i === 0 && e.victoria ? C.gold : null);
-      ajustar(ctx, d[1], w - 30, 64, 30, true);
-      rotulo(ctx, d[1], x + w / 2, y + 92, i === 0 ? (e.victoria ? C.gold : C.text) : C.text, 'center');
-      font(ctx, 20, false);
-      rotulo(ctx, d[0], x + w / 2, y + 132, C.muted, 'center');
+      panel(ctx, x, y, w, h, i === 0 && e.victoria ? C.gold : null, 14);
+      ajustar(ctx, d[1], w - 20, 38, 20, true);
+      rotulo(ctx, d[1], x + w / 2, y + 54, i === 0 ? (e.victoria ? C.gold : C.text) : C.text, 'center');
+      font(ctx, 13, false);
+      rotulo(ctx, d[0], x + w / 2, y + 80, C.muted, 'center');
     });
   }
 
   function tira(ctx, e) {
-    var y = 690;
-    font(ctx, 24, true);
+    var y = 440;
+    font(ctx, 17, true);
     rotulo(ctx, 'THE SEASON', PAD, y, C.muted);
-    font(ctx, 20, false);
-    rotulo(ctx, 'outlined = boss match', W - PAD, y, C.muted, 'right');
+    if (e.forma.some(function (f) { return f.jefe; })) {
+      font(ctx, 14, false);
+      rotulo(ctx, 'outlined = boss match', PAD + LW, y, C.muted, 'right');
+    }
 
-    var n = Math.max(e.jornadas, e.forma.length), gap = 10;
-    var s = Math.floor((W - PAD * 2 - gap * (n - 1)) / n), top = y + 24;
+    var n = Math.max(e.jornadas, e.forma.length), gap = 6;
+    var s = Math.floor((LW - gap * (n - 1)) / n), top = y + 14;
     for (var i = 0; i < n; i++) {
       var x = PAD + i * (s + gap), f = e.forma[i];
       if (!f) {
-        ctx.setLineDash && ctx.setLineDash([6, 6]);
-        ctx.lineWidth = 3; ctx.strokeStyle = C.border;
-        rrect(ctx, x + 2, top + 2, s - 4, s - 4, 10); ctx.stroke();
+        ctx.setLineDash && ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 2; ctx.strokeStyle = C.border;
+        rrect(ctx, x + 1, top + 1, s - 2, s - 2, 6); ctx.stroke();
         ctx.setLineDash && ctx.setLineDash([]);
         continue;
       }
-      ctx.fillStyle = 'rgba(0,0,0,0.35)'; rrect(ctx, x, top + 5, s, s, 10); ctx.fill();
-      ctx.fillStyle = RES_COLOR[f.res]; rrect(ctx, x, top, s, s, 10); ctx.fill();
-      if (f.jefe) { ctx.lineWidth = 4; ctx.strokeStyle = '#fff'; rrect(ctx, x - 4, top - 4, s + 8, s + 8, 13); ctx.stroke(); }
-      font(ctx, Math.min(22, Math.floor(s * 0.36)), true);
-      rotulo(ctx, f.gf + '-' + f.gc, x + s / 2, top + s / 2 + 8, C.ink, 'center');
+      ctx.fillStyle = 'rgba(0,0,0,0.35)'; rrect(ctx, x, top + 3, s, s, 6); ctx.fill();
+      ctx.fillStyle = RES_COLOR[f.res]; rrect(ctx, x, top, s, s, 6); ctx.fill();
+      if (f.jefe) { ctx.lineWidth = 2.5; ctx.strokeStyle = '#fff'; rrect(ctx, x - 2.5, top - 2.5, s + 5, s + 5, 8); ctx.stroke(); }
+      font(ctx, Math.min(13, Math.floor(s * 0.4)), true);
+      rotulo(ctx, f.gf + '-' + f.gc, x + s / 2, top + s / 2 + 5, C.ink, 'center');
     }
   }
 
+  // "new record" chips, under the results strip
+  function records(ctx, info) {
+    var lista = (info && info.records) || [];
+    var x = PAD, y = 506, h = 32;
+    font(ctx, 14, true);
+    lista.slice(0, 3).forEach(function (r) {
+      var txt = '★ ' + r.label.toUpperCase();
+      var w = ctx.measureText(txt).width + 28;
+      if (x + w > PAD + LW) return;
+      ctx.fillStyle = C.gold; rrect(ctx, x, y, w, h, h / 2); ctx.fill();
+      rotulo(ctx, txt, x + 14, y + 21, C.ink);
+      x += w + 10;
+    });
+  }
+
+  // right column: player of the season, top scorer / assists, final XI
   function premios(ctx, e) {
-    var y = 820, w = W - PAD * 2;
-    // player of the season, with the pixel portrait
-    panel(ctx, PAD, y, w, 190, C.gold);
-    var px = PAD + 30, py = y + 31, ps = 128;
-    ctx.fillStyle = C.panel2; rrect(ctx, px - 6, py - 6, ps + 12, ps + 12, 14); ctx.fill();
+    var y = 128, w = W - PAD - RX;
+    panel(ctx, RX, y, w, 160, C.gold);
+    var px = RX + 24, py = y + 24, ps = 112;
+    ctx.fillStyle = C.panel2; rrect(ctx, px - 4, py - 4, ps + 8, ps + 8, 12); ctx.fill();
     if (e.mvp && typeof Sprite !== 'undefined' && Sprite.lienzo) {
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(Sprite.lienzo(e.mvp), px, py, ps, ps);
       ctx.imageSmoothingEnabled = true;
     }
-    var tx = px + ps + 34, maxW = PAD + w - 30 - tx;
-    font(ctx, 22, false);
-    rotulo(ctx, 'PLAYER OF THE SEASON', tx, y + 58, C.gold);
+    var tx = px + ps + 28, maxW = RX + w - 24 - tx;
+    font(ctx, 15, false);
+    rotulo(ctx, 'PLAYER OF THE SEASON', tx, y + 46, C.gold);
     if (e.mvp) {
-      ajustar(ctx, e.mvp.nombre, maxW, 54, 32, true);
-      rotulo(ctx, recortar(ctx, e.mvp.nombre, maxW), tx, y + 118, C.text);
-      font(ctx, 26, false);
-      rotulo(ctx, e.mvp.pos + ' · ' + e.mvp.media.toFixed(2) + ' average rating', tx, y + 158, C.muted);
+      ajustar(ctx, e.mvp.nombre, maxW, 38, 22, true);
+      rotulo(ctx, recortar(ctx, e.mvp.nombre, maxW), tx, y + 96, C.text);
+      font(ctx, 18, false);
+      rotulo(ctx, recortar(ctx, e.mvp.pos + ' · ' + e.mvp.media.toFixed(2) + ' average rating', maxW), tx, y + 130, C.muted);
     } else {
-      font(ctx, 40, true);
-      rotulo(ctx, '—', tx, y + 118, C.muted);
+      font(ctx, 34, true);
+      rotulo(ctx, '—', tx, y + 96, C.muted);
     }
 
-    // top scorer and top assists
-    var gap = 24, hw = (w - gap) / 2, y2 = y + 214;
+    // top scorer and top assists, level with the stat tiles
+    var gap = 16, hw = (w - gap) / 2, y2 = 304;
     [['TOP SCORER', e.goleador, 'goles', 'goal', 'goals'],
      ['TOP ASSISTS', e.asistente, 'asistencias', 'assist', 'assists']].forEach(function (a, i) {
-      var x = PAD + i * (hw + gap);
-      panel(ctx, x, y2, hw, 130);
-      font(ctx, 20, false);
-      rotulo(ctx, a[0], x + 28, y2 + 42, C.muted);
+      var x = RX + i * (hw + gap);
+      panel(ctx, x, y2, hw, 96, null, 14);
+      font(ctx, 13, false);
+      rotulo(ctx, a[0], x + 20, y2 + 28, C.muted);
       if (a[1]) {
         var n = a[1][a[2]];
-        ajustar(ctx, a[1].nombre, hw - 56, 34, 22, true);
-        rotulo(ctx, recortar(ctx, a[1].nombre, hw - 56), x + 28, y2 + 84, C.text);
-        font(ctx, 22, false);
-        rotulo(ctx, n + ' ' + (n === 1 ? a[3] : a[4]), x + 28, y2 + 114, C.gold);
+        ajustar(ctx, a[1].nombre, hw - 40, 24, 15, true);
+        rotulo(ctx, recortar(ctx, a[1].nombre, hw - 40), x + 20, y2 + 58, C.text);
+        font(ctx, 16, false);
+        rotulo(ctx, n + ' ' + (n === 1 ? a[3] : a[4]), x + 20, y2 + 82, C.gold);
       } else {
-        font(ctx, 34, true);
-        rotulo(ctx, '—', x + 28, y2 + 90, C.muted);
+        font(ctx, 26, true);
+        rotulo(ctx, '—', x + 20, y2 + 64, C.muted);
       }
+    });
+
+    xi(ctx, e, RX, 420, w);
+  }
+
+  // rarity breakdown of the last starting XI (entries from before RR-4 have none)
+  function xi(ctx, e, x, y, w) {
+    panel(ctx, x, y, w, 118, null, 14);
+    font(ctx, 13, false);
+    rotulo(ctx, 'FINAL XI', x + 20, y + 28, C.muted);
+    if (!e.xi) {
+      font(ctx, 26, true);
+      rotulo(ctx, '—', x + 20, y + 76, C.muted);
+      return;
+    }
+    var gap = 10, bw = (w - 40 - gap * 3) / 4;
+    RAREZAS.forEach(function (r, i) {
+      var bx = x + 20 + i * (bw + gap), by = y + 40, n = e.xi[r[0]] || 0;
+      ctx.globalAlpha = n ? 0.18 : 0.06;
+      ctx.fillStyle = r[2]; rrect(ctx, bx, by, bw, 62, 10); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 2; ctx.strokeStyle = n ? r[2] : C.border; rrect(ctx, bx, by, bw, 62, 10); ctx.stroke();
+      font(ctx, 28, true);
+      rotulo(ctx, String(n), bx + bw / 2, by + 34, n ? r[2] : C.muted, 'center');
+      font(ctx, 12, false);
+      rotulo(ctx, r[1], bx + bw / 2, by + 53, n ? C.text : C.muted, 'center');
     });
   }
 
   function pie(ctx, e, info) {
-    var y = 1210;
-    var records = (info && info.records) || [];
-    // "new record" chips
-    var x = PAD;
-    font(ctx, 20, true);
-    records.slice(0, 3).forEach(function (r) {
-      var txt = '★ ' + r.label.toUpperCase();
-      var w = ctx.measureText(txt).width + 36;
-      if (x + w > W - PAD) return;
-      ctx.fillStyle = C.gold; rrect(ctx, x, y - 30, w, 44, 22); ctx.fill();
-      rotulo(ctx, txt, x + 18, y, C.ink);
-      x += w + 12;
-    });
-
-    font(ctx, 22, false);
+    var y = 596;
+    font(ctx, 16, false);
     var rank = info && info.rank ? 'Hall of Fame #' + info.rank + ' of ' + info.total : '';
-    rotulo(ctx, rank, PAD, 1290, C.muted);
-    font(ctx, 22, true);
-    rotulo(ctx, 'ONE SEASON. ONE SHOT.', W - PAD, 1290, C.text, 'right');
+    rotulo(ctx, rank, PAD, y, C.muted);
+    font(ctx, 16, true);
+    rotulo(ctx, 'ONE SEASON. ONE SHOT.', W - PAD, y, C.text, 'right');
   }
 
-  // Draw the card for `entry` onto `canvas` (resized to 1080x1350).
+  // Draw the card for `entry` onto `canvas` (resized to 1200x630).
   // info = {rank, total, records} from Hall.evaluar/registrar (optional).
   // Returns false where there is no 2D canvas (e.g. the Node tests).
   function dibujar(canvas, entry, info) {
@@ -337,6 +371,7 @@ var SeasonCard = (function () {
     titular(ctx, entry, v);
     tiles(ctx, entry);
     tira(ctx, entry);
+    records(ctx, info);
     premios(ctx, entry);
     pie(ctx, entry, info);
     if (canvas.setAttribute) {

@@ -920,10 +920,10 @@ var UI = (function () {
     var tiles = [
       ['Runs', r.runs],
       ['Titles', r.titulos],
-      ['Win rate', r.runs ? Math.round(r.titulos / r.runs * 100) + '%' : '—'],
+      ['Title rate', r.runs ? Math.round(r.titulos / r.runs * 100) + '%' : '—'],
       ['Best finish', r.mejorPuesto ? SeasonCard.ordinal(r.mejorPuesto) : '—'],
       ['Most points', r.runs ? r.mejorPts : '—'],
-      ['Best win streak', r.runs ? r.mejorRacha : '—']
+      ['Win streak', r.runs ? r.mejorRacha : '—']
     ];
     $('#hall-summary').innerHTML = tiles.map(function (t) {
       return '<div class="hall-tile"><b>' + t[1] + '</b><span>' + t[0] + '</span></div>';

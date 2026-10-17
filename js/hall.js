@@ -9,7 +9,7 @@ var Hall = (function () {
 
   var KEY = 'relegation-run:hall';
   var VERSION = 1;
-  var MAX_ENTRIES = 100;
+  var MAX_ENTRIES = 20; // RR-4 spec: up to 20 season summaries
 
   // ---- storage ----
   function leer() {
@@ -84,8 +84,19 @@ var Hall = (function () {
       oro: s.oroGanado,
       mvp: persona(review.mejor, 'media'),
       goleador: persona(review.goleador, 'goles'),
-      asistente: persona(review.asistente, 'asistencias')
+      asistente: persona(review.asistente, 'asistencias'),
+      xi: rarezasXI(run)
     };
+  }
+
+  // how many of each rarity were in the last starting XI
+  function rarezasXI(run) {
+    var n = { legendaria: 0, epica: 0, rara: 0, comun: 0 }, hay = false;
+    (run.alineacion || []).forEach(function (id) {
+      var c = id && run.plantilla.filter(function (p) { return p.id === id; })[0];
+      if (c && n[c.rareza] !== undefined) { n[c.rareza]++; hay = true; }
+    });
+    return hay ? n : null;
   }
 
   // ---- records: what does this entry beat? ----
