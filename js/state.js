@@ -31,9 +31,15 @@ var State = (function () {
     return rondas.concat(vuelta);
   }
 
+  // unique per run: keys the Hall of Fame entry so a run is recorded once
+  function nuevoId() {
+    return 'r' + Date.now().toString(36) + Math.floor(Math.random() * 1679616).toString(36);
+  }
+
   function nuevaRun() {
     var equipos = Gen.generarLiga();
     run = {
+      id: nuevoId(),
       jornada: 1,
       oro: 300,
       plantilla: Gen.plantillaInicial(),
@@ -286,6 +292,7 @@ var State = (function () {
     var d = leerPartida();
     if (!d) { borrarPartida(); return null; }
     run = d.run;
+    if (!run.id) run.id = nuevoId(); // saves from before the Hall of Fame
     Gen.setIdSeq(d.idSeq || 0);
     return d.phase;
   }

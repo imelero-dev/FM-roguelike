@@ -11,7 +11,7 @@ var path = require('path');
 var vm = require('vm');
 
 var ROOT = path.join(__dirname, '..');
-var MODULES = ['attrs', 'formations', 'gen', 'synergy', 'engine', 'state', 'league', 'economy', 'nego', 'ui', 'mobile', 'match', 'main'];
+var MODULES = ['attrs', 'formations', 'gen', 'synergy', 'engine', 'state', 'league', 'hall', 'card', 'economy', 'nego', 'ui', 'mobile', 'match', 'main'];
 
 function memoryStorage() {
   var s = {};
@@ -31,7 +31,7 @@ function boot(storage) {
     this.tagName = (tag || 'div').toUpperCase();
     this.id = id || '';
     this.className = '';
-    this.innerHTML = '';
+    this._html = '';
     this.textContent = '';
     this.style = {};
     this.dataset = {};
@@ -58,6 +58,11 @@ function boot(storage) {
   Elem.prototype.addEventListener = function () {};
   Elem.prototype.click = function () {};
   Elem.prototype.dispatchEvent = function () {};
+  // like the real DOM, assigning innerHTML replaces the element's children
+  Object.defineProperty(Elem.prototype, 'innerHTML', {
+    get: function () { return this._html; },
+    set: function (v) { this._html = String(v); this.children = []; }
+  });
   Object.defineProperty(Elem.prototype, 'firstChild', { get: function () { return this.children[0]; } });
   Object.defineProperty(Elem.prototype, 'lastChild', { get: function () { return this.children[this.children.length - 1]; } });
 

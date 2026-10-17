@@ -135,6 +135,34 @@ function esperar(ms) { return new Promise(function (r) { setTimeout(r, ms); }); 
   if (!await js('document.querySelectorAll("#end-form .res").length > 0 && document.querySelectorAll("#end-squad tr").length > 1')) problemas.push('REVIEW: season review not rendered');
   await shot('season-review');
 
+  // season card: really painted on the canvas (not just the background colour)
+  var CARD_PAINTED = '(function(id){var c=document.getElementById(id);if(c.width!==1080||c.height!==1350)return false;' +
+    'var d=c.getContext("2d").getImageData(0,0,c.width,c.height).data,cols={};' +
+    'for(var i=0;i<d.length;i+=4*997)cols[d[i]+","+d[i+1]+","+d[i+2]]=1;return Object.keys(cols).length>20;})';
+  if (!await js(CARD_PAINTED + '("end-card-canvas")')) problemas.push('CARD: season card canvas is blank');
+  if (!await js('/^Season card: /.test(document.getElementById("end-card-canvas").getAttribute("aria-label"))')) problemas.push('CARD: missing accessible label');
+  if (SHOTS) {
+    var png = await js('document.getElementById("end-card-canvas").toDataURL("image/png")');
+    fs.writeFileSync(path.join(SHOTS, 'season-card.png'), Buffer.from(png.split(',')[1], 'base64'));
+  }
+  // copy text works from file:// (falls back to execCommand without the Clipboard API)
+  await js('document.getElementById("btn-end-copy").click()');
+
+  // Hall of Fame: store this season, open the screen, open its card, close with Esc
+  await js('Hall.registrar(Hall.crearEntrada(State.run, { victoria: false, razon: "Browser check", puesto: League.puestoJugador() }, League.resumenTemporada(), 1))');
+  await js('document.getElementById("btn-end-hall").click()');
+  await hasta('document.getElementById("screen-hall").classList.contains("active")', 3000);
+  if (await js('document.querySelectorAll("#hall-list .hall-row").length') !== 1) problemas.push('HALL: expected one Hall of Fame row');
+  await shot('hall-of-fame');
+  await js('document.querySelector("#hall-list .hall-row").click()');
+  await hasta('!document.getElementById("card-modal").classList.contains("hidden")', 3000);
+  if (!await js(CARD_PAINTED + '("card-canvas")')) problemas.push('HALL: card modal canvas is blank');
+  await js('document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))');
+  if (!await js('document.getElementById("card-modal").classList.contains("hidden")')) problemas.push('HALL: Esc did not close the card');
+  await js('document.getElementById("hall-sort-recent").click()');
+  await js('document.getElementById("btn-hall-back").click()');
+  await hasta('document.getElementById("screen-menu").classList.contains("active")', 3000);
+
   var estado = await js('JSON.stringify({matchday: State.run.jornada, screen: document.querySelector(".screen.active").id})');
 
   console.log('URL:', URL);

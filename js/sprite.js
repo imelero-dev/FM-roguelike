@@ -119,6 +119,15 @@ var Sprite = (function () {
     return url;
   }
 
+  // 16x16 canvas with the same portrait, for drawing onto other canvases
+  // (the season card). Takes the minimal {nombre, id, pos} a Hall of Fame entry keeps.
+  function lienzo(p) {
+    var canvas = document.createElement('canvas');
+    canvas.width = 16; canvas.height = 16;
+    dibujar(canvas.getContext('2d'), hash(p.nombre + '|' + p.id), p.pos);
+    return canvas;
+  }
+
   // <img> ready to insert, with pixelated scaling
   function img(carta, size) {
     var i = document.createElement('img');
@@ -129,5 +138,5 @@ var Sprite = (function () {
     return i;
   }
 
-  return { avatar: avatar, img: img, hash: hash };
+  return { avatar: avatar, img: img, lienzo: lienzo, hash: hash };
 })();

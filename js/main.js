@@ -140,7 +140,9 @@
       run.terminada = true;
       State.borrarPartida();
       State.guardarMeta({ victoria: fin.victoria, puesto: fin.puesto, pg: run.stats.pg });
-      UI.renderEnd(fin);
+      // carve the season into the Hall of Fame (numbered by lifetime runs)
+      var entrada = Hall.crearEntrada(run, fin, League.resumenTemporada(), State.meta().runs);
+      UI.renderEnd(fin, Hall.registrar(entrada));
       return;
     }
 
@@ -221,6 +223,18 @@
       UI.toast('🪄 XI picked automatically');
     };
     document.getElementById('btn-end-menu').onclick = function () {
+      AudioFX.click();
+      UI.renderMenu();
+    };
+    document.getElementById('btn-hall').onclick = function () {
+      AudioFX.click();
+      UI.renderHall('best');
+    };
+    document.getElementById('btn-end-hall').onclick = function () {
+      AudioFX.click();
+      UI.renderHall('best');
+    };
+    document.getElementById('btn-hall-back').onclick = function () {
       AudioFX.click();
       UI.renderMenu();
     };

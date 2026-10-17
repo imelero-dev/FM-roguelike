@@ -870,8 +870,117 @@ var UI = (function () {
     }, 30);
   }
 
+  // ---------- season card + sharing ----------
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // Wires the three share buttons (ids prefix-share/-download/-copy) to a card.
+  function wireShare(prefix, canvas, entry, info) {
+    $('#' + prefix + '-share').onclick = function () {
+      AudioFX.click();
+      SeasonCard.compartir(canvas, entry, info, function (r) {
+        if (r === 'downloaded') toast('🃏 Card saved as PNG, and the text summary is on your clipboard');
+        else if (r === 'shared') toast('📤 Card shared');
+      });
+    };
+    $('#' + prefix + '-download').onclick = function () {
+      AudioFX.click();
+      SeasonCard.descargar(canvas, entry);
+      toast('⬇️ Saved ' + SeasonCard.nombreArchivo(entry));
+    };
+    $('#' + prefix + '-copy').onclick = function () {
+      AudioFX.click();
+      SeasonCard.copiar(SeasonCard.texto(entry, info), function (ok) {
+        toast(ok ? '📋 Season summary copied. Paste it anywhere.' : 'Could not access the clipboard', ok ? '' : 'error');
+      });
+    };
+  }
+
+  function recordsHTML(records) {
+    return records.map(function (r) {
+      return '<span class="record-chip">★ New record: ' + esc(r.label) + '</span>';
+    }).join('');
+  }
+
+  // ---------- Hall of Fame ----------
+  var hallOrden = 'best';
+
+  function fechaCorta(ts) {
+    try { return new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); }
+    catch (e) { return new Date(ts).toISOString().slice(0, 10); }
+  }
+
+  function renderHall(orden) {
+    if (orden) hallOrden = orden;
+    var entries = Hall.leer();
+    var r = Hall.resumen(entries);
+    var tiles = [
+      ['Runs', r.runs],
+      ['Titles', r.titulos],
+      ['Win rate', r.runs ? Math.round(r.titulos / r.runs * 100) + '%' : '—'],
+      ['Best finish', r.mejorPuesto ? SeasonCard.ordinal(r.mejorPuesto) : '—'],
+      ['Most points', r.runs ? r.mejorPts : '—'],
+      ['Best win streak', r.runs ? r.mejorRacha : '—']
+    ];
+    $('#hall-summary').innerHTML = tiles.map(function (t) {
+      return '<div class="hall-tile"><b>' + t[1] + '</b><span>' + t[0] + '</span></div>';
+    }).join('');
+
+    ['best', 'recent'].forEach(function (k) {
+      var b = $('#hall-sort-' + k);
+      b.classList.toggle('active', k === hallOrden);
+      b.setAttribute && b.setAttribute('aria-selected', String(k === hallOrden));
+      b.onclick = function () { AudioFX.click(); renderHall(k); };
+    });
+
+    // ranks always come from the "best" order, even when listing by date
+    var ranking = Hall.ranking(entries);
+    var lista = hallOrden === 'best' ? ranking : Hall.recientes(entries);
+    var ol = $('#hall-list');
+    ol.innerHTML = '';
+    lista.forEach(function (e) {
+      var rank = ranking.indexOf(e) + 1;
+      var v = SeasonCard.veredicto(e);
+      var li = el('li', 'hall-item');
+      var row = el('button', 'hall-row' + (e.victoria ? ' champ' : '') + (rank <= 3 && hallOrden === 'best' ? ' podium podium-' + rank : ''));
+      row.dataset.id = e.id;
+      row.innerHTML =
+        '<span class="hall-rank">' + (rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : '#' + rank) + '</span>' +
+        '<span class="hall-crest" style="background:' + colorHex(e.equipo.color) + '"></span>' +
+        '<span class="hall-main"><b>' + esc(e.equipo.nombre) + '</b>' +
+          '<small>' + (e.numero ? 'Run #' + e.numero + ' · ' : '') + fechaCorta(e.fecha) + ' · ' + esc(e.formacion) + '</small>' +
+          '<span class="hall-form">' + e.forma.map(function (f) { return '<i class="hf hf-' + f.res + '"></i>'; }).join('') + '</span>' +
+        '</span>' +
+        '<span class="hall-verdict"><span class="verdict-chip' + (e.victoria ? ' win' : '') + '">' + esc(v.titulo) + '</span>' +
+          '<small>' + e.pts + ' pts · ' + e.pg + '-' + e.pe + '-' + e.pp + ' · ' + e.gf + ':' + e.gc + '</small></span>';
+      row.setAttribute && row.setAttribute('aria-label', SeasonCard.alt(e) + ' Open season card.');
+      row.onclick = function () { AudioFX.click(); abrirCarta(e, { rank: rank, total: ranking.length, records: [] }); };
+      li.appendChild(row);
+      ol.appendChild(li);
+    });
+    $('#hall-empty').classList.toggle('hidden', entries.length > 0);
+    showScreen('screen-hall');
+  }
+
+  function abrirCarta(entry, info) {
+    var canvas = $('#card-canvas');
+    $('#card-modal-title').textContent = entry.equipo.nombre + (entry.numero ? ' · Run #' + entry.numero : '');
+    SeasonCard.dibujar(canvas, entry, info);
+    wireShare('btn-card', canvas, entry, info);
+    $('#card-modal').classList.remove('hidden');
+  }
+
+  function cerrarCarta() {
+    $('#card-modal').classList.add('hidden');
+  }
+
   // ---------- end of run ----------
-  function renderEnd(fin) {
+  // registro = Hall.registrar(...) result; without it (e.g. a preview) the
+  // card is built from the current run and evaluated without being stored.
+  function renderEnd(fin, registro) {
     var run = State.run;
     var s = run.stats;
     $('#end-title').textContent = fin.victoria ? '👑 CHAMPIONS!' : '💀 RUN OVER';
@@ -923,6 +1032,16 @@ var UI = (function () {
       }).join('');
     $('#end-table').innerHTML = tablaHTML(League.clasificacion());
 
+    // season card, records and Hall of Fame rank
+    var info = registro || Hall.evaluar(Hall.crearEntrada(run, fin, review, null));
+    $('#end-records').innerHTML = recordsHTML(info.records);
+    var canvas = $('#end-card-canvas');
+    SeasonCard.dibujar(canvas, info.entry, info);
+    wireShare('btn-end', canvas, info.entry, info);
+    $('#end-rank').innerHTML = registro
+      ? 'Ranked <b>#' + info.rank + '</b> of ' + info.total + ' in your Hall of Fame'
+      : 'Preview: this season is not in the Hall of Fame';
+
     if (fin.victoria) AudioFX.victoria(); else AudioFX.derrota();
     showScreen('screen-end');
   }
@@ -951,6 +1070,16 @@ var UI = (function () {
     $('#ficha-modal').onclick = function (ev) {
       if (ev.target === this) $('#ficha-modal').classList.add('hidden');
     };
+    $('#card-close').onclick = function () { AudioFX.click(); cerrarCarta(); };
+    $('#card-modal').onclick = function (ev) {
+      if (ev.target === this) cerrarCarta();
+    };
+    // Esc closes the read-only modals
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Escape') return;
+      cerrarCarta();
+      $('#ficha-modal').classList.add('hidden');
+    });
   }
 
   return {
@@ -966,6 +1095,9 @@ var UI = (function () {
     renderManage: renderManage,
     renderPost: renderPost,
     renderEnd: renderEnd,
+    renderHall: renderHall,
+    abrirCarta: abrirCarta,
+    cerrarCarta: cerrarCarta,
     resetSeleccion: function () { benchSelection = null; }
   };
 })();

@@ -38,6 +38,7 @@
         <button id="btn-continue" class="btn btn-big btn-gold hidden">CONTINUE ▶</button>
         <p id="continue-info" class="continue-info hidden"></p>
         <button id="btn-new-run" class="btn btn-big btn-gold">NEW RUN</button>
+        <button id="btn-hall" class="btn btn-ghost">🏛️ Hall of Fame</button>
         <button id="btn-how" class="btn btn-ghost">How to play</button>
         <button id="btn-mute" class="btn btn-ghost btn-small">🔊 Sound</button>
       </div>
@@ -216,6 +217,17 @@
     <div class="end-content">
       <h1 id="end-title"></h1>
       <p id="end-reason" class="end-reason"></p>
+      <div id="end-records" class="end-records" aria-live="polite"></div>
+      <section class="end-card" aria-labelledby="end-card-title">
+        <h3 id="end-card-title" class="end-section">🃏 Your season card</h3>
+        <div class="card-frame"><canvas id="end-card-canvas" class="season-card-canvas" width="1080" height="1350"></canvas></div>
+        <div class="share-actions">
+          <button id="btn-end-share" class="btn btn-gold">📤 Share card</button>
+          <button id="btn-end-download" class="btn">⬇️ Save PNG</button>
+          <button id="btn-end-copy" class="btn">📋 Copy text</button>
+        </div>
+        <p id="end-rank" class="end-rank"></p>
+      </section>
       <div id="end-form" class="end-form" aria-label="Results by matchday"></div>
       <div id="end-stats" class="end-stats"></div>
       <div id="end-awards" class="end-awards"></div>
@@ -223,7 +235,28 @@
       <div class="end-scroll"><table id="end-squad" class="league-table end-squad"></table></div>
       <h3 class="end-section">🏁 Final table</h3>
       <table id="end-table" class="league-table"></table>
-      <button id="btn-end-menu" class="btn btn-big btn-gold">Back to menu</button>
+      <div class="end-buttons">
+        <button id="btn-end-hall" class="btn btn-big">🏛️ Hall of Fame</button>
+        <button id="btn-end-menu" class="btn btn-big btn-gold">Back to menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ HALL OF FAME ============ -->
+  <div id="screen-hall" class="screen">
+    <div class="hall-content">
+      <header class="hall-head">
+        <button id="btn-hall-back" class="btn btn-small btn-ghost">◀ Menu</button>
+        <h1 class="hall-title">🏛️ Hall of Fame</h1>
+        <span></span>
+      </header>
+      <div id="hall-summary" class="hall-summary"></div>
+      <div class="seg hall-sort" role="tablist" aria-label="Sort runs">
+        <button id="hall-sort-best" class="btn btn-small seg-btn active" role="tab" aria-selected="true">🏆 Best</button>
+        <button id="hall-sort-recent" class="btn btn-small seg-btn" role="tab" aria-selected="false">🕒 Recent</button>
+      </div>
+      <ol id="hall-list" class="hall-list"></ol>
+      <p id="hall-empty" class="hall-empty hidden">No finished runs yet. Every season you complete (or get sacked from) is carved in here. Go make history, gaffer.</p>
     </div>
   </div>
 
@@ -267,6 +300,20 @@
     </div>
   </div>
 
+  <!-- ============ SEASON CARD MODAL (Hall of Fame) ============ -->
+  <div id="card-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="card-modal-title">
+    <div class="modal-box card-box">
+      <button id="card-close" class="btn btn-tiny ficha-close" aria-label="Close">✕</button>
+      <h3 id="card-modal-title">Season card</h3>
+      <div class="card-frame"><canvas id="card-canvas" class="season-card-canvas" width="1080" height="1350"></canvas></div>
+      <div class="share-actions">
+        <button id="btn-card-share" class="btn btn-gold">📤 Share card</button>
+        <button id="btn-card-download" class="btn">⬇️ Save PNG</button>
+        <button id="btn-card-copy" class="btn">📋 Copy text</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast-container"></div>
   <div id="fx-overlay"></div>
 </div>
@@ -280,6 +327,8 @@
 <script src="js/engine.js"></script>
 <script src="js/state.js"></script>
 <script src="js/league.js"></script>
+<script src="js/hall.js"></script>
+<script src="js/card.js"></script>
 <script src="js/economy.js"></script>
 <script src="js/nego.js"></script>
 <script src="js/ui.js"></script>

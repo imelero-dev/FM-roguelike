@@ -51,6 +51,24 @@ On phones and tablets the interface switches to a touch layout with bottom navig
 
 At the end of the season (or when you're sacked) you get a **season review**. It shows a results strip for every matchday, the season's awards (player of the season, top scorer, top assists, league top scorer), stats for every player in your squad and the final table.
 
+### Season card and Hall of Fame
+
+Every finished run, title or sacking, gets a **season card**: a 1080×1350 image (4:5, the size feeds display best) with your club crest, the verdict, position, points, W-D-L, goals, a colour-coded square for every matchday (boss matches outlined, unplayed ones dashed), your player of the season with their pixel portrait, the top scorer and assist maker, and any new personal records.
+
+- **📤 Share card** opens your device's share sheet with the PNG where the browser supports it (most phones). Elsewhere it saves the PNG and copies the text summary.
+- **⬇️ Save PNG** downloads the image.
+- **📋 Copy text** copies a short summary that pastes cleanly anywhere:
+
+```
+Relegation Run #12 · 👑 Champions
+Athletic Northport · 1st · 34 pts
+🟩🟩🟨🟩🟥🟩🟩🟩🟨🟩🟩🟩🟩🟩
+11W 2D 1L · 31-12
+🏅 Leo Marsh (7.84)
+```
+
+Every run is also carved into the **🏛️ Hall of Fame**, reachable from the main menu and the end screen. It shows career totals (runs, titles, win rate, best finish, most points, best win streak) and lists every run, sorted by **Best** (titles first, then final position, points, goal difference and goals) or **Recent**. Tap any run to reopen and share its card. New records (first title, best finish, most points, most goals, longest win streak) are flagged on the end screen and printed on the card.
+
 ### Saving
 
 The game **autosaves** after every management action and as soon as a match ends. Close the tab at any time and use **Continue** on the main menu to pick the run back up. Results are locked in when the final whistle goes: reloading never replays a match. If you reload on the post-match screen, the unclaimed reward card is lost. Starting a new run while a save exists asks for confirmation first. All data stays in your browser's `localStorage`.
@@ -69,6 +87,7 @@ The game **autosaves** after every management action and as soon as a match ends
 | **Economy** | Gold from wins, objectives and sales. Wages are paid every matchday. The shop has rerolls, and transfers are negotiated with an AI that has hidden patience and a hidden reserve price. |
 | **Fitness, form, morale** | Playing drains condition according to Stamina, and tired players perform worse and get injured more. Form follows match ratings, and morale follows results. |
 | **Season review** | Results strip, awards, per-player stats and the final table. |
+| **Season card & Hall of Fame** | Shareable 4:5 PNG card drawn on a canvas (Web Share API, download or clipboard text) and a ranked, persistent history of every run with personal records. |
 | **Save / resume** | Versioned autosave in `localStorage` with validation and anti-replay. |
 | **Presentation** | Phaser renders the match (striped pitch, ball flight with shadow and trail, animated cards, celebrations, live HUD). Portraits are deterministic procedural pixel art and the sound is synthesised with WebAudio, so the game ships no binary assets. |
 | **Mobile** | App-style bottom navigation, swipeable bench, bottom-sheet modals and touch steppers. |
@@ -89,6 +108,8 @@ js/synergy.js       Synergies, skills, form and morale → effective attributes
 js/engine.js        Continuous match engine (spatial, headless or visual)
 js/state.js         Run state, tactics, cohesion, line-up, meta, save/resume
 js/league.js        Table, AI fixtures, top scorers, end of run, season review
+js/hall.js          Hall of Fame: run entries, ranking, records, storage
+js/card.js          Season card: canvas drawing, share text, Web Share / PNG / clipboard
 js/economy.js       Shop, wages, rewards, injuries, condition
 js/nego.js          Negotiation AI
 js/ui.js            DOM rendering: management, tactics, profiles, post-match, review
@@ -107,6 +128,7 @@ tests/              Dependency-free Node and headless-Chrome tests
 | Key | Contents |
 |---|---|
 | `relegation-run:save` | `{ version, savedAt, phase, idSeq, run }`. The single autosave slot. `phase` is `manage` or `post`. The save is ignored if the version or shape doesn't match. |
+| `relegation-run:hall` | `{ version, entries }`. The Hall of Fame: one self-contained snapshot per finished run (team, verdict, record, results strip, award winners), enough to redraw its card. It is capped at 100 runs and trims from the bottom of the ranking, never the run just played. Invalid data is ignored. |
 | `relegation-run:meta` | Lifetime record: runs, titles, best finish, best winning tally. The legacy key `rm_meta` is migrated automatically. |
 
 ## 🧪 Testing
@@ -116,8 +138,10 @@ No dependencies, just Node 18+.
 ```bash
 node tests/smoke.js 100     # plays 100 full seasons with random decisions and checks invariants
 node tests/save.js          # save/resume and season-review tests (simulated page reloads)
+node tests/hall.js          # Hall of Fame ranking/records/storage and season-card layout tests
 node --experimental-websocket tests/browser-check.js [chrome-path] [?mobile=1]
                             # opens index.html in headless Chrome over file://, plays two matches,
+                            # checks the season card canvas and the Hall of Fame,
                             # fails on any console error or warning
 ```
 
@@ -127,7 +151,7 @@ node --experimental-websocket tests/browser-check.js [chrome-path] [?mobile=1]
 
 - Difficulty balancing from real play sessions (gold curve, rarity weights, opponent growth).
 - A safeguard for the rare case where injuries and sales leave no playable formation and no gold.
-- Keyboard navigation, visible focus, `Esc` to close modals.
+- Keyboard navigation everywhere (the season card and profile modals already close with `Esc`).
 - Testing on real Safari/iOS and Firefox devices.
 - Multi-season careers and unlockables between runs.
 
@@ -137,7 +161,7 @@ Issues and pull requests are welcome. Before opening a PR:
 
 1. Keep it dependency-free and build-free: the game must still run from `file://`.
 2. Keep the engine render-agnostic. Simulation logic goes in `engine.js`, drawing in `match.js`.
-3. Run `node tests/smoke.js 50` and `node tests/save.js`, plus the browser check if you touched UI or rendering.
+3. Run `node tests/smoke.js 50`, `node tests/save.js` and `node tests/hall.js`, plus the browser check if you touched UI or rendering.
 4. If you change the shape of the run state, bump `SAVE_VERSION` in `js/state.js`.
 5. Write code comments and UI text in English.
 
