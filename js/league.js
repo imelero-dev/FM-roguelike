@@ -144,6 +144,14 @@ var League = (function () {
       });
       return best;
     }
+    // counted by name in run.stats, so players sold mid-season still qualify
+    function goleadorTemporada(goles) {
+      var best = null;
+      Object.keys(goles).forEach(function (n) {
+        if (!best || goles[n] > best.goles) best = { nombre: n, goles: goles[n] };
+      });
+      return best;
+    }
     // player of the season needs a third of the matches played to qualify
     var minPj = Math.max(1, Math.ceil(forma.length / 3));
 
@@ -151,7 +159,7 @@ var League = (function () {
       forma: forma,
       plantilla: plantilla,
       mejor: mejorPor('media', minPj),
-      goleador: mejorPor('goles', 1),
+      goleador: goleadorTemporada(run.stats.mejorGoleador),
       asistente: mejorPor('asistencias', 1),
       ligaGoleador: topScorers(1)[0] || null
     };

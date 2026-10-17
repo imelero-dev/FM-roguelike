@@ -608,8 +608,8 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .drop-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: center; }
 
 /* ---------- end of run ---------- */
-#screen-end { align-items: center; justify-content: center; text-align: center; overflow-y: auto; }
-.end-content { padding: 40px; max-width: 620px; width: 100%; margin: auto; }
+#screen-end { align-items: center; text-align: center; overflow-y: auto; } /* .end-content centres itself with margin:auto, which never clips when it overflows */
+.end-content { padding: 40px; max-width: 760px; width: 100%; margin: auto; }
 #end-title { font-size: 56px; margin-bottom: 10px; animation: titlePop 0.6s ease; }
 .end-win { color: var(--gold); text-shadow: 0 5px 0 #7a5a00, 0 0 50px rgba(255,213,74,0.55); }
 .end-lose { color: var(--red); text-shadow: 0 5px 0 #6e1520; }
@@ -627,7 +627,6 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .end-stat b { color: var(--gold); }
 
 /* season review */
-#screen-end { overflow-y: auto; }
 .continue-info { color: var(--muted); font-size: 13px; margin: -6px 0 4px; }
 .end-form { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-bottom: 22px; }
 .end-form .res {
@@ -638,7 +637,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .end-form .res-E { background: #ffd54a; }
 .end-form .res-D { background: #ff6b5c; }
 .end-form .res-boss { outline: 2px solid #fff; outline-offset: 1px; }
-.end-awards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 26px; }
+.end-awards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 26px; }
 .end-award {
   background: var(--panel); border: 3px solid var(--border); border-radius: 12px;
   box-shadow: 0 5px 0 var(--border-dark); padding: 12px; text-align: center;

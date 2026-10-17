@@ -878,11 +878,6 @@ var UI = (function () {
     $('#end-title').className = fin.victoria ? 'end-win' : 'end-lose';
     $('#end-reason').textContent = fin.razon;
 
-    var goleador = null, maxG = 0;
-    Object.keys(s.mejorGoleador).forEach(function (n) {
-      if (s.mejorGoleador[n] > maxG) { maxG = s.mejorGoleador[n]; goleador = n; }
-    });
-
     var filas = [
       ['Final position', fin.puesto + ' of 8'],
       ['Record', s.pg + 'W · ' + s.pe + 'D · ' + s.pp + 'L'],
@@ -890,8 +885,7 @@ var UI = (function () {
       ['Gold earned', s.oroGanado + ' 💰'],
       ['Gold spent', s.oroGastado + ' 💰'],
       ['Signings / sales', s.cartasCompradas + ' / ' + s.cartasVendidas],
-      ['Boss matches won', s.jefesGanados],
-      ['Top scorer', goleador ? goleador + ' (' + maxG + ')' : '—']
+      ['Boss matches won', s.jefesGanados]
     ];
     $('#end-stats').innerHTML = filas.map(function (f) {
       return '<div class="end-stat"><span>' + f[0] + '</span><b>' + f[1] + '</b></div>';
@@ -925,6 +919,7 @@ var UI = (function () {
 
     if (fin.victoria) AudioFX.victoria(); else AudioFX.derrota();
     showScreen('screen-end');
+    $('#screen-end').scrollTop = 0;
   }
 
   // ---------- tabs ----------

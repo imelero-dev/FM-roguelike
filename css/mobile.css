@@ -167,6 +167,7 @@ html.is-mobile .post-gold { min-width: 0; width: 100%; }
 html.is-mobile .drop-cards { gap: 12px; }
 html.is-mobile #btn-post-continue { width: 100%; }
 html.is-mobile .end-content { padding: 24px 16px; }
+html.is-mobile .end-awards { grid-template-columns: repeat(2, 1fr); }
 html.is-mobile #end-title { font-size: 38px; }
 html.is-mobile #btn-end-menu { width: 100%; }
 

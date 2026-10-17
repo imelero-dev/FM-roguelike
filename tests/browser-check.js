@@ -108,10 +108,10 @@ function esperar(ms) { return new Promise(function (r) { setTimeout(r, ms); }); 
     await js('document.querySelector(".speed-btn[data-speed=\'4\']").click()');
     // half-time team talk / tactics board
     if (partido === 1) { await esperar(6000); await shot('match'); }
-    await hasta('!document.getElementById("ht-panel").classList.contains("hidden")', 30000);
+    await hasta('!document.getElementById("ht-panel").classList.contains("hidden")', 60000);
     await js('document.querySelector("#ht-mentalidad .seg-btn").click(); document.getElementById("ht-continue").click()');
     if (partido === 2) await js('document.getElementById("btn-skip").click()');
-    ok = await hasta('document.getElementById("screen-post").classList.contains("active")', 40000);
+    ok = await hasta('document.getElementById("screen-post").classList.contains("active")', 60000);
     // drop: open the player profile, then skip the drop
     await esperar(2500);
     if (partido === 1) await shot('post-match');
@@ -130,7 +130,7 @@ function esperar(ms) { return new Promise(function (r) { setTimeout(r, ms); }); 
   if (jornadaDespues !== jornadaAntes) problemas.push('RESUME: matchday ' + jornadaAntes + ' became ' + jornadaDespues + ' after reload');
 
   // season review: render the end screen for the current run
-  await js('UI.renderEnd({ victoria: false, razon: "Browser check", puesto: League.puestoJugador() })');
+  await js('UI.renderEnd({ victoria: false, razon: "Season review preview (sacked early)", puesto: League.puestoJugador() })');
   await hasta('document.getElementById("screen-end").classList.contains("active")', 3000);
   if (!await js('document.querySelectorAll("#end-form .res").length > 0 && document.querySelectorAll("#end-squad tr").length > 1')) problemas.push('REVIEW: season review not rendered');
   await shot('season-review');

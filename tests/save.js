@@ -165,6 +165,9 @@ test('finishing a run clears the save and fills the season review', function () 
   assert.strictEqual(review.forma.reduce(function (a, f) { return a + f.gf; }, 0), S.run.stats.gf);
   assert.strictEqual(review.plantilla.length, S.run.plantilla.length);
   if (review.mejor) assert.ok(review.mejor.media > 0 && review.mejor.pj >= 1);
+  var tally = S.run.stats.mejorGoleador, maxGoals = 0;
+  Object.keys(tally).forEach(function (n) { maxGoals = Math.max(maxGoals, tally[n]); });
+  assert.strictEqual(review.goleador ? review.goleador.goles : 0, maxGoals, 'top scorer counts sold players too');
 
   assert.ok(/class="res res-/.test(h.byId('end-form').innerHTML), 'results strip rendered');
   assert.ok(/Player of the season/.test(h.byId('end-awards').innerHTML), 'awards rendered');
