@@ -1,11 +1,11 @@
 /* ============================================================
-   ECONOMY — oro, tienda, salarios, recompensas, lesiones,
-   condición física y forma entre jornadas.
+   ECONOMY — gold, transfer market, wages, rewards, injuries,
+   fitness and form between matchdays.
    ============================================================ */
 
 var Economy = (function () {
 
-  // ---- tienda ----
+  // ---- transfer market ----
   function generarTienda() {
     var run = State.run;
     var boost = State.tieneStaff('cazatalentos');
@@ -35,7 +35,7 @@ var Economy = (function () {
   function reroll() {
     var run = State.run;
     var gratis = State.tieneStaff('economista') && !run.economistaUsado;
-    if (!gratis && run.oro < run.rerollCost) return { ok: false, msg: 'Oro insuficiente' };
+    if (!gratis && run.oro < run.rerollCost) return { ok: false, msg: 'Not enough gold' };
     if (gratis) {
       run.economistaUsado = true;
     } else {
@@ -47,7 +47,7 @@ var Economy = (function () {
     return { ok: true, gratis: gratis };
   }
 
-  // ---- salarios y jornada ----
+  // ---- wages and matchday ----
   function pagarSalarios() {
     var run = State.run;
     var total = State.salarioTotal();
@@ -57,7 +57,7 @@ var Economy = (function () {
     var impago = run.oro < total;
     run.stats.oroGastado += Math.min(total, run.oro);
     run.oro = Math.max(0, run.oro - total);
-    run.debuffProxPartido = impago ? 2 : 0; // -2 a todos los atributos
+    run.debuffProxPartido = impago ? 2 : 0; // -2 to all attributes
     return { total: total, extra: extra, impago: impago };
   }
 
@@ -68,7 +68,7 @@ var Economy = (function () {
     });
   }
 
-  // recuperación de condición y decaimiento de forma entre jornadas
+  // condition recovery and form decay between matchdays
   function recuperarJornada() {
     var prep = State.tieneStaff('preparador') ? 10 : 0;
     State.run.plantilla.forEach(function (c) {
@@ -78,18 +78,18 @@ var Economy = (function () {
   }
 
   function quizasLesion() {
-    // tras el partido: prob. de lesión, mayor si el once acabó fundido
+    // after the match: injury chance, higher if the XI finished exhausted
     var run = State.run;
     var once = State.onceActual().filter(Boolean);
     if (!once.length) return null;
     var media = once.reduce(function (s, c) { return s + c.condicion; }, 0) / once.length;
     var p = 0.10 + (media < 65 ? 0.10 : media < 80 ? 0.04 : 0);
     if (!RNG.chance(p)) return null;
-    // víctima ponderada por cansancio
+    // victim weighted by fatigue
     var victima = RNG.weighted(once.map(function (c) {
       return { v: c, w: Math.max(5, 115 - c.condicion) };
     }));
-    // no lesiona si dejaría la formación actual sin efectivos
+    // no injury if it would leave the current formation short of players
     var REQ = State.reqActual();
     var sanos = run.plantilla.filter(function (c) {
       return c.pos === victima.pos && State.disponible(c);
@@ -103,7 +103,7 @@ var Economy = (function () {
     return { carta: victima, dur: dur };
   }
 
-  // ---- recompensas post-partido ----
+  // ---- post-match rewards ----
   function recompensaOro(resultado, rival, esJefe) {
     var oro = 0;
     var detalles = [];
@@ -111,15 +111,15 @@ var Economy = (function () {
       var base = 100;
       var dif = Math.max(0, rival.rating - 50) * 3;
       oro += base + dif;
-      detalles.push({ txt: 'Victoria', oro: base });
-      if (dif > 0) detalles.push({ txt: 'Bonus dificultad (rival ' + rival.rating + ')', oro: dif });
-      if (esJefe) { oro += 120; detalles.push({ txt: 'Partido jefe superado', oro: 120 }); }
+      detalles.push({ txt: 'Win', oro: base });
+      if (dif > 0) detalles.push({ txt: 'Difficulty bonus (opp. ' + rival.rating + ')', oro: dif });
+      if (esJefe) { oro += 120; detalles.push({ txt: 'Boss match beaten', oro: 120 }); }
     } else if (resultado === 'E') {
       oro += 40;
-      detalles.push({ txt: 'Empate', oro: 40 });
+      detalles.push({ txt: 'Draw', oro: 40 });
     } else {
       oro += 15;
-      detalles.push({ txt: 'Taquilla', oro: 15 });
+      detalles.push({ txt: 'Gate receipts', oro: 15 });
     }
     return { oro: oro, detalles: detalles };
   }
@@ -127,13 +127,13 @@ var Economy = (function () {
   function bonusObjetivos(gf, gc, resultado, mvpNota) {
     var detalles = [];
     var oro = 0;
-    if (resultado === 'V' && gc === 0) { oro += 30; detalles.push({ txt: 'Portería a cero', oro: 30 }); }
-    if (gf >= 3) { oro += 30; detalles.push({ txt: 'Goleada (3+ goles)', oro: 30 }); }
-    if (mvpNota >= 8.5) { oro += 25; detalles.push({ txt: 'Actuación estelar (nota ' + mvpNota + ')', oro: 25 }); }
+    if (resultado === 'V' && gc === 0) { oro += 30; detalles.push({ txt: 'Clean sheet', oro: 30 }); }
+    if (gf >= 3) { oro += 30; detalles.push({ txt: 'Hammering (3+ goals)', oro: 30 }); }
+    if (mvpNota >= 8.5) { oro += 25; detalles.push({ txt: 'Star performance (rating ' + mvpNota + ')', oro: 25 }); }
     return { oro: oro, detalles: detalles };
   }
 
-  // Drop de cartas ponderado por dificultad; el jugador elige 1
+  // Card drop weighted by difficulty; the player picks 1
   function generarDrop(rival, esJefe, gano) {
     var n = 3 + (State.tieneStaff('ojeador') ? 1 : 0);
     if (!gano && !esJefe && !RNG.chance(0.5)) n = Math.max(2, n - 1);

@@ -1,16 +1,15 @@
 /* ============================================================
-   FORMATIONS — formaciones con slots espaciales (roles) y
-   tácticas de equipo. Las posiciones de los slots son la base
-   defensiva del bloque: el motor las desplaza según posesión,
-   zona del balón, mentalidad y amplitud, así que el choque de
-   formaciones (superioridades por zona) emerge de la geometría
-   y además se refuerza con modificadores explícitos por zona.
+   FORMATIONS — formations with spatial slots (roles) and team
+   tactics. Slot positions are the team's defensive shape: the
+   engine shifts them by possession, ball zone, mentality and
+   width, so the formation clash (overloads per zone) emerges
+   from the geometry and is reinforced by explicit zone modifiers.
 
-   slot: { pos, rol, x (profundidad 0-1 hacia la portería rival),
-           y (0-1 de banda a banda) }
-   Roles: GK, CB (central), FB (lateral), WB (carrilero),
-          DM (pivote), CM (interior), WM (medio banda),
-          AM (mediapunta), W (extremo), ST (delantero)
+   slot: { pos, rol, x (depth 0-1 towards the opponent's goal),
+           y (0-1 touchline to touchline) }
+   Roles: GK, CB (centre-back), FB (full-back), WB (wing-back),
+          DM (defensive mid), CM (central mid), WM (wide mid),
+          AM (attacking mid), W (winger), ST (striker)
    ============================================================ */
 
 var Formations = (function () {
@@ -20,7 +19,7 @@ var Formations = (function () {
   var DEFS = {
     '4-3-3': {
       nombre: '4-3-3',
-      desc: 'Extremos abiertos y tridente arriba. Domina las bandas en ataque; el centro del campo puede quedar justo.',
+      desc: 'Wide wingers and a front three. Dominates the flanks in attack; midfield can get stretched.',
       slots: [
         s('GK', 'GK', 0.045, 0.5),
         s('DEF', 'FB', 0.175, 0.11), s('DEF', 'CB', 0.15, 0.36), s('DEF', 'CB', 0.15, 0.64), s('DEF', 'FB', 0.175, 0.89),
@@ -30,7 +29,7 @@ var Formations = (function () {
     },
     '4-4-2': {
       nombre: '4-4-2',
-      desc: 'Dos líneas de cuatro: sólido, directo y fácil de mantener. Puede verse superado en el centro contra tres medios.',
+      desc: 'Two banks of four: solid, direct and easy to hold. Can be overrun centrally by a midfield three.',
       slots: [
         s('GK', 'GK', 0.045, 0.5),
         s('DEF', 'FB', 0.175, 0.11), s('DEF', 'CB', 0.15, 0.36), s('DEF', 'CB', 0.15, 0.64), s('DEF', 'FB', 0.175, 0.89),
@@ -40,7 +39,7 @@ var Formations = (function () {
     },
     '4-2-3-1': {
       nombre: '4-2-3-1',
-      desc: 'Doble pivote y mediapunta entre líneas. Control del centro y equilibrio; el delantero puede quedarse solo.',
+      desc: 'Double pivot and a No. 10 between the lines. Central control and balance; the striker can get isolated.',
       slots: [
         s('GK', 'GK', 0.045, 0.5),
         s('DEF', 'FB', 0.175, 0.11), s('DEF', 'CB', 0.15, 0.36), s('DEF', 'CB', 0.15, 0.64), s('DEF', 'FB', 0.175, 0.89),
@@ -51,7 +50,7 @@ var Formations = (function () {
     },
     '3-5-2': {
       nombre: '3-5-2',
-      desc: 'Cinco en el medio: superioridad interior y carrileros que dan amplitud. Sufre contra extremos rápidos.',
+      desc: 'Five in midfield: central overload and wing-backs for width. Struggles against quick wingers.',
       slots: [
         s('GK', 'GK', 0.045, 0.5),
         s('DEF', 'CB', 0.155, 0.25), s('DEF', 'CB', 0.14, 0.5), s('DEF', 'CB', 0.155, 0.75),
@@ -61,7 +60,7 @@ var Formations = (function () {
     },
     '3-4-3': {
       nombre: '3-4-3',
-      desc: 'Muy ofensivo: tres arriba y medios abiertos. Genera muchísimo, pero deja espacios a la espalda.',
+      desc: 'All-out attack: three up top and wide mids. Creates loads, but leaves space in behind.',
       slots: [
         s('GK', 'GK', 0.045, 0.5),
         s('DEF', 'CB', 0.155, 0.25), s('DEF', 'CB', 0.14, 0.5), s('DEF', 'CB', 0.155, 0.75),
@@ -71,7 +70,7 @@ var Formations = (function () {
     },
     '5-3-2': {
       nombre: '5-3-2',
-      desc: 'Cerrojo con cinco atrás y dos puntas al contragolpe. Muy difícil de batir, poca producción ofensiva.',
+      desc: 'Park the bus with five at the back and two strikers on the break. Very hard to beat, little going forward.',
       slots: [
         s('GK', 'GK', 0.045, 0.5),
         s('DEF', 'WB', 0.19, 0.07), s('DEF', 'CB', 0.145, 0.28), s('DEF', 'CB', 0.13, 0.5), s('DEF', 'CB', 0.145, 0.72), s('DEF', 'WB', 0.19, 0.93),
@@ -81,7 +80,7 @@ var Formations = (function () {
     },
     '4-1-4-1': {
       nombre: '4-1-4-1',
-      desc: 'Bloque medio compacto con pivote posicional. Equilibrado y pesado de atacar; necesita un punta que aguante solo.',
+      desc: 'Compact mid-block with a holding midfielder. Balanced and hard to break down; needs a lone striker who can hold it up.',
       slots: [
         s('GK', 'GK', 0.045, 0.5),
         s('DEF', 'FB', 0.175, 0.11), s('DEF', 'CB', 0.15, 0.36), s('DEF', 'CB', 0.15, 0.64), s('DEF', 'FB', 0.175, 0.89),
@@ -100,32 +99,32 @@ var Formations = (function () {
     return r;
   }
 
-  // ---------- tácticas ----------
+  // ---------- tactics ----------
   var MENTALIDADES = [
-    { v: -1, nombre: 'Defensiva', desc: 'Bloque bajo, pocos riesgos. Cede el balón y cierra espacios.' },
-    { v: 0, nombre: 'Equilibrada', desc: 'Bloque medio, riesgo moderado.' },
-    { v: 1, nombre: 'Ofensiva', desc: 'Líneas altas y más hombres al ataque. Deja espacios atrás.' }
+    { v: -1, nombre: 'Defensive', desc: 'Low block, few risks. Concede the ball and close the gaps.' },
+    { v: 0, nombre: 'Balanced', desc: 'Mid-block, moderate risk.' },
+    { v: 1, nombre: 'Attacking', desc: 'High line and more bodies forward. Leaves space at the back.' }
   ];
   var PRESIONES = [
-    { v: 0, nombre: 'Baja', desc: 'Repliegue: solo presiona cerca del área. Ahorra energía.' },
-    { v: 1, nombre: 'Media', desc: 'Presión en campo propio.' },
-    { v: 2, nombre: 'Alta', desc: 'Asfixia al portador en todo el campo. Roba arriba, agota a los tuyos.' }
+    { v: 0, nombre: 'Low', desc: 'Drop off: only press near your own box. Saves energy.' },
+    { v: 1, nombre: 'Medium', desc: 'Press in your own half.' },
+    { v: 2, nombre: 'High', desc: 'Hound the ball carrier all over the pitch. Wins it high, tires your players.' }
   ];
   var ESTILOS = [
-    { v: 'corto', nombre: 'Combinativo', desc: 'Pases cortos y control. Necesita buen Pase/Técnica; vulnerable a la presión alta.' },
-    { v: 'directo', nombre: 'Directo', desc: 'Balones largos a los puntas. Salta la presión, pierde posesión.' }
+    { v: 'corto', nombre: 'Short passing', desc: 'Short passes and control. Needs good Passing/Technique; vulnerable to a high press.' },
+    { v: 'directo', nombre: 'Direct', desc: 'Long balls to the strikers. Bypasses the press, gives away possession.' }
   ];
   var AMPLITUDES = [
-    { v: 'estrecha', nombre: 'Estrecha', desc: 'Junta a los tuyos por dentro: más apoyo, menos banda.' },
-    { v: 'normal', nombre: 'Normal', desc: 'Ocupación estándar del campo.' },
-    { v: 'ancha', nombre: 'Ancha', desc: 'Estira el campo: abre huecos por dentro, aísla a los extremos.' }
+    { v: 'estrecha', nombre: 'Narrow', desc: 'Packs your players centrally: more support, less width.' },
+    { v: 'normal', nombre: 'Normal', desc: 'Standard use of the pitch.' },
+    { v: 'ancha', nombre: 'Wide', desc: 'Stretches the pitch: opens gaps centrally, isolates the wingers.' }
   ];
 
   function tacticaBase() {
     return { formacion: '4-3-3', mentalidad: 0, presion: 1, estilo: 'corto', amplitud: 'normal' };
   }
 
-  // Preset coherente para un equipo IA según su nivel
+  // Sensible preset for an AI team based on its rating
   function tacticaIA(rating) {
     var t;
     if (rating >= 72) {
@@ -138,8 +137,8 @@ var Formations = (function () {
     return t;
   }
 
-  // ---------- análisis de enfrentamiento ----------
-  // Presencia por zonas de una formación (sin contar al portero)
+  // ---------- matchup analysis ----------
+  // Zone presence of a formation (excluding the goalkeeper)
   function presencia(key) {
     var p = { centro: 0, banda: 0, medios: 0, atras: 0, arriba: 0 };
     DEFS[key].slots.forEach(function (sl) {
@@ -153,8 +152,8 @@ var Formations = (function () {
     return p;
   }
 
-  // Ventajas numéricas de A sobre B (positivo = ventaja de A).
-  // El motor las usa como modificadores suaves por zona.
+  // Numerical advantages of A over B (positive = A's advantage).
+  // The engine uses them as soft per-zone modifiers.
   function ventajas(formA, formB) {
     var a = presencia(formA), b = presencia(formB);
     return {
@@ -163,19 +162,19 @@ var Formations = (function () {
     };
   }
 
-  // Consejos de scouting legibles para el jugador
+  // Human-readable scouting tips for the player
   function consejos(miForm, rival) {
     var v = ventajas(miForm, rival.formacion);
     var out = [];
-    if (v.centro > 0) out.push('✅ Tu ' + miForm + ' tiene superioridad en el centro contra su ' + rival.formacion + ': dominarás la posesión interior.');
-    if (v.centro < 0) out.push('⚠️ Su ' + rival.formacion + ' te supera en el medio: te costará circular por dentro.');
-    if (v.banda > 0) out.push('✅ Llegas con más gente a las bandas: los centros y extremos harán daño.');
-    if (v.banda < 0) out.push('⚠️ Te doblarán por fuera: vigila los centros laterales.');
-    if (rival.presion === 2) out.push('🔥 Presionan muy arriba: el estilo Directo salta su presión (o castígales con Técnica alta).');
-    if (rival.presion === 0) out.push('💤 Presionan poco: el juego Combinativo te dará el balón sin riesgo.');
-    if (rival.mentalidad === 1) out.push('⚔️ Salen a por el partido: dejarán espacios a la espalda para tus rápidos.');
-    if (rival.mentalidad === -1) out.push('🧱 Se encierran atrás: necesitarás paciencia y tiro lejano.');
-    if (!out.length) out.push('Enfrentamiento parejo: decidirán los jugadores.');
+    if (v.centro > 0) out.push('✅ Your ' + miForm + ' outnumbers their ' + rival.formacion + ' in midfield: you\'ll control possession through the middle.');
+    if (v.centro < 0) out.push('⚠️ Their ' + rival.formacion + ' outnumbers you in midfield: you\'ll struggle to play through the middle.');
+    if (v.banda > 0) out.push('✅ You get more bodies out wide: crosses and wingers will hurt them.');
+    if (v.banda < 0) out.push('⚠️ They\'ll overload you out wide: watch out for crosses.');
+    if (rival.presion === 2) out.push('🔥 They press very high: a Direct style bypasses it (or punish them with high Technique).');
+    if (rival.presion === 0) out.push('💤 They barely press: Short passing will give you the ball risk-free.');
+    if (rival.mentalidad === 1) out.push('⚔️ They\'ll go for it: expect space in behind for your quick players.');
+    if (rival.mentalidad === -1) out.push('🧱 They\'ll sit deep: you\'ll need patience and long shots.');
+    if (!out.length) out.push('Even matchup: the players will decide it.');
     return out;
   }
 
@@ -183,7 +182,7 @@ var Formations = (function () {
     var m = MENTALIDADES.filter(function (x) { return x.v === t.mentalidad; })[0];
     var p = PRESIONES.filter(function (x) { return x.v === t.presion; })[0];
     var e = ESTILOS.filter(function (x) { return x.v === t.estilo; })[0];
-    return t.formacion + ' · ' + m.nombre + ' · Presión ' + p.nombre.toLowerCase() + ' · ' + e.nombre;
+    return t.formacion + ' · ' + m.nombre + ' · ' + p.nombre + ' press · ' + e.nombre;
   }
 
   return {

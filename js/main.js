@@ -1,6 +1,6 @@
 /* ============================================================
-   MAIN — arranque y flujo de la run:
-   menú → gestión/táctica → partido → post-partido → (fin | siguiente)
+   MAIN — boot and run flow:
+   menu → management/tactics → match → post-match → (end | next)
    ============================================================ */
 
 (function () {
@@ -9,15 +9,15 @@
     State.nuevaRun();
     UI.resetSeleccion();
     UI.renderManage();
-    UI.toast('¡Nueva temporada! Revisa tu once y tu táctica.');
+    UI.toast('New season! Check your starting XI and tactics.');
   }
 
   function jugarPartido() {
     var run = State.run;
     if (!State.onceCompleto()) {
       UI.toast(State.puedeFormacion(run.tactica.formacion)
-        ? 'Necesitas 11 jugadores disponibles alineados'
-        : 'Te faltan efectivos para el ' + run.tactica.formacion + ': cambia de formación en 📋 Táctica o ficha', 'error');
+        ? 'You need 11 available players in the XI'
+        : 'Not enough players for ' + run.tactica.formacion + ': change formation in 📋 Tactics or sign someone', 'error');
       AudioFX.error();
       return;
     }
@@ -34,7 +34,7 @@
     var ctxRival = Engine.contextoIA(rival, esJefe);
 
     if (run.debuffProxPartido > 0) {
-      UI.toast('⚠️ Vestuario desmotivado por el impago: -' + run.debuffProxPartido + ' a todos los atributos', 'error');
+      UI.toast('⚠️ Dressing room unhappy over unpaid wages: -' + run.debuffProxPartido + ' to all attributes', 'error');
     }
 
     Match.start(ctxJugador, ctxRival, {
@@ -50,7 +50,7 @@
     var gf = resultado.gf, gc = resultado.gc;
     var res = gf > gc ? 'V' : gf < gc ? 'D' : 'E';
 
-    // estadísticas de la run
+    // run stats
     var s = run.stats;
     s.gf += gf; s.gc += gc;
     if (res === 'V') { s.pg++; run.derrotasSeguidas = 0; if (esJefe) s.jefesGanados++; }
@@ -61,11 +61,11 @@
     });
     run.debuffProxPartido = 0;
 
-    // las bajas previas cumplen esta jornada ANTES de aplicar las nuevas
-    // (si no, una roja o lesión de 1 jornada no se cumplía nunca)
+    // existing absences are served this matchday BEFORE applying new ones
+    // (otherwise a red card or 1-matchday injury would never be served)
     Economy.avanzarLesiones();
 
-    // actualización por jugador: temporada, forma, condición, sanciones
+    // per-player update: season, form, condition, suspensions
     var mvp = null;
     resultado.jugadores[0].forEach(function (j) {
       var c = State.cartaPorId(j.cardId);
@@ -84,24 +84,24 @@
       if (!mvp || j.nota > mvp.nota) mvp = j;
     });
 
-    // moral y cohesión táctica
+    // morale and tactical cohesion
     run.moral = Math.max(25, Math.min(95,
       run.moral + (res === 'V' ? (esJefe ? 12 : 8) : res === 'E' ? 1 : -9)));
     var f = run.tactica.formacion;
     var gainCoh = State.tieneStaff('pizarra') ? 36 : 18;
     run.cohesion[f] = Math.min(100, (run.cohesion[f] || 0) + gainCoh);
 
-    // oro
+    // gold
     var rec = Economy.recompensaOro(res, rival, esJefe);
     var obj = Economy.bonusObjetivos(gf, gc, res, mvp ? mvp.nota : 0);
     var oroTotal = rec.oro + obj.oro;
     run.oro += oroTotal;
     s.oroGanado += oroTotal;
 
-    // lesión post-partido
+    // post-match injury
     var lesion = Economy.quizasLesion();
 
-    // cierra la jornada (el resto se juega con el motor real)
+    // close the matchday (other fixtures are played with the real engine)
     var p = State.partidoDelJugador(run.jornada);
     var resJornada = League.cerrarJornada({
       gh: p.esLocal ? gf : gc,
@@ -142,14 +142,14 @@
     run.jornada++;
     Economy.recuperarJornada();
     var pago = Economy.pagarSalarios();
-    if (pago.extra) UI.toast('💎 Mecenas aporta +' + pago.extra + ' 💰');
+    if (pago.extra) UI.toast('💎 Benefactor chips in +' + pago.extra + ' 💰');
     if (pago.impago) {
-      UI.toast('🚨 ¡No pudiste pagar los ' + pago.total + ' 💰 de salarios! El vestuario está desmotivado.', 'error');
+      UI.toast('🚨 You couldn\'t pay ' + pago.total + ' 💰 in wages! The dressing room is unhappy.', 'error');
     } else {
-      UI.toast('Salarios pagados: -' + pago.total + ' 💰');
+      UI.toast('Wages paid: -' + pago.total + ' 💰');
     }
     if (run.derrotasSeguidas === 2) {
-      UI.toast('☠️ Una derrota más y la directiva te despide', 'error');
+      UI.toast('☠️ One more defeat and the board sacks you', 'error');
     }
     UI.resetSeleccion();
     UI.renderManage();
@@ -172,7 +172,7 @@
     };
     document.getElementById('btn-mute').onclick = function () {
       var m = AudioFX.toggleMute();
-      document.getElementById('btn-mute').textContent = m ? '🔇 Sonido' : '🔊 Sonido';
+      document.getElementById('btn-mute').textContent = m ? '🔇 Sound' : '🔊 Sound';
       if (!m) AudioFX.click();
     };
     document.getElementById('btn-play-match').onclick = function () {
@@ -183,7 +183,7 @@
       var r = Economy.reroll();
       if (!r.ok) { UI.toast(r.msg, 'error'); AudioFX.error(); return; }
       AudioFX.buy();
-      if (r.gratis) UI.toast('🧮 El Economista consigue un reroll gratis');
+      if (r.gratis) UI.toast('🧮 The Economist wangles a free reroll');
       UI.renderManage();
       document.querySelector('.tab[data-tab="tab-shop"]').click();
     };
@@ -192,7 +192,7 @@
       State.autoAlinear();
       UI.resetSeleccion();
       UI.renderManage();
-      UI.toast('🪄 Once colocado automáticamente');
+      UI.toast('🪄 XI picked automatically');
     };
     document.getElementById('btn-end-menu').onclick = function () {
       AudioFX.click();

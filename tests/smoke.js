@@ -1,10 +1,10 @@
 /* ============================================================
-   SMOKE TEST headless (Node, sin dependencias):
+   Headless SMOKE TEST (Node, no dependencies):
      node tests/smoke.js [nRuns]
-   Carga los módulos reales del juego con un DOM mínimo simulado
-   (sin Phaser → el partido va por el camino "modo texto"/skip),
-   juega temporadas completas pulsando botones al azar (fichar,
-   vender, formación, táctica, drops) y comprueba invariantes.
+   Loads the real game modules with a minimal fake DOM
+   (no Phaser → the match takes the "text mode"/skip path),
+   plays full seasons pressing random buttons (sign, sell,
+   formation, tactics, drops) and checks invariants.
    ============================================================ */
 'use strict';
 var fs = require('fs');
@@ -14,7 +14,7 @@ var vm = require('vm');
 var ROOT = path.join(__dirname, '..');
 var N_RUNS = parseInt(process.argv[2], 10) || 20;
 
-// ---------- DOM mínimo ----------
+// ---------- minimal DOM ----------
 var creados = [];
 function Elem(tag, id) {
   this.tagName = (tag || 'div').toUpperCase();
@@ -63,7 +63,7 @@ var document = {
   documentElement: new Elem('html')
 };
 
-// temporizadores deterministas: cola que se drena a mano
+// deterministic timers: a queue drained by hand
 var timers = [];
 function setTimeoutFake(fn) { timers.push(fn); return timers.length; }
 function drenar() {
@@ -82,7 +82,11 @@ var ctx = {
   location: { search: '' },
   localStorage: (function () {
     var s = {};
-    return { getItem: function (k) { return k in s ? s[k] : null; }, setItem: function (k, v) { s[k] = String(v); } };
+    return {
+      getItem: function (k) { return k in s ? s[k] : null; },
+      setItem: function (k, v) { s[k] = String(v); },
+      removeItem: function (k) { delete s[k]; }
+    };
   })(),
   setTimeout: setTimeoutFake,
   clearTimeout: function () {},
@@ -91,7 +95,7 @@ var ctx = {
   requestAnimationFrame: function () {},
   scrollTo: function () {},
   Event: function () {},
-  // stubs de módulos con canvas/WebAudio
+  // stubs for canvas/WebAudio modules
   Sprite: { avatar: function () { return 'data:'; }, img: function () { return new Elem('img'); } },
   AudioFX: new Proxy({}, { get: function (t, k) { return k === 'toggleMute' ? function () { return true; } : function () {}; } })
 };
@@ -105,15 +109,15 @@ vm.createContext(ctx);
   });
 domReady.forEach(function (fn) { fn(); });
 
-function click(id) { var e = byId(id); if (!e.onclick) throw new Error('#' + id + ' sin onclick'); e.onclick({ stopPropagation: function () {} }); drenar(); }
+function click(id) { var e = byId(id); if (!e.onclick) throw new Error('#' + id + ' has no onclick'); e.onclick({ stopPropagation: function () {} }); drenar(); }
 function botones(clase) {
   return creados.filter(function (e) { return (' ' + e.className + ' ').indexOf(' ' + clase + ' ') >= 0 && e.onclick; });
 }
 function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
-function assert(cond, msg) { if (!cond) throw new Error('Invariante: ' + msg); }
+function assert(cond, msg) { if (!cond) throw new Error('Invariant: ' + msg); }
 
-// ---------- partidas ----------
-var resumen = { runs: 0, titulos: 0, jornadas: 0, goles: 0, sanciones: 0, lesiones: 0, bloqueos: 0 };
+// ---------- runs ----------
+var resumen = { runs: 0, titles: 0, matchdays: 0, goals: 0, suspensions: 0, injuries: 0, deadlocks: 0 };
 
 for (var r = 0; r < N_RUNS; r++) {
   click('btn-new-run');
@@ -121,10 +125,10 @@ for (var r = 0; r < N_RUNS; r++) {
   var jornadasRun = 0;
   while (!S.run.terminada && jornadasRun < 20) {
     creados = [];
-    // re-render para tener botones frescos
+    // re-render to get fresh buttons
     ctx.UI.renderManage();
 
-    // acciones aleatorias de gestión
+    // random management actions
     if (Math.random() < 0.3) { var fc = botones('formation-card'); if (fc.length) { pick(fc).onclick(); drenar(); } }
     if (Math.random() < 0.3) { var sg = botones('seg-btn'); if (sg.length) { pick(sg).onclick(); drenar(); } }
     if (Math.random() < 0.4) {
@@ -151,56 +155,56 @@ for (var r = 0; r < N_RUNS; r++) {
 
     if (!S.onceCompleto()) click('btn-auto-lineup');
     if (!S.onceCompleto()) {
-      // ¿hay alguna formación jugable? el jugador podría cambiar a ella
+      // is any formation playable? the player could switch to it
       var alt = ctx.Formations.LISTA.filter(S.puedeFormacion)[0];
       if (alt) { S.cambiarFormacion(alt); S.autoAlinear(); }
     }
     if (!S.onceCompleto()) {
-      resumen.bloqueos++;
+      resumen.deadlocks++;
       var disp = {};
       S.run.plantilla.forEach(function (c) { if (S.disponible(c)) disp[c.pos] = (disp[c.pos] || 0) + 1; });
-      console.log('BLOQUEO j' + S.run.jornada, S.run.tactica.formacion, JSON.stringify(disp), 'oro', S.run.oro);
+      console.log('DEADLOCK md' + S.run.jornada, S.run.tactica.formacion, JSON.stringify(disp), 'gold', S.run.oro);
       break;
     }
 
-    // nadie no disponible en el once
+    // no unavailable player in the XI
     S.onceActual().forEach(function (c) {
-      assert(c && S.disponible(c), 'jugador no disponible alineado: ' + (c && c.nombre));
+      assert(c && S.disponible(c), 'unavailable player in the XI: ' + (c && c.nombre));
     });
 
     var jornadaAntes = S.run.jornada;
     creados = [];
-    click('btn-play-match'); // Match sin Phaser → skip → renderPost
+    click('btn-play-match'); // Match without Phaser → skip → renderPost
 
     var bajas = [];
     S.run.plantilla.forEach(function (c) {
-      if (c.sancion > 0) { resumen.sanciones++; bajas.push(c.id); }
-      if (c.lesion > 0) { resumen.lesiones++; bajas.push(c.id); }
+      if (c.sancion > 0) { resumen.suspensions++; bajas.push(c.id); }
+      if (c.lesion > 0) { resumen.injuries++; bajas.push(c.id); }
     });
 
-    // drop: elegir carta, venta rápida o pasar
+    // drop: pick a card, quick-sell or skip
     var opciones = botones('btn-tiny').concat(botones('drop-skip'));
     if (opciones.length) { pick(opciones).onclick(); drenar(); }
     if (!byId('btn-post-continue').onclick) { var skipB = botones('drop-skip'); if (skipB.length) { skipB[0].onclick(); drenar(); } }
     click('btn-post-continue');
 
-    assert(S.run.terminada || S.run.jornada === jornadaAntes + 1, 'la jornada no avanzó');
-    // una baja (roja o lesión) recién producida debe perderse al menos el siguiente partido
+    assert(S.run.terminada || S.run.jornada === jornadaAntes + 1, 'matchday did not advance');
+    // a fresh absence (red card or injury) must miss at least the next match
     bajas.forEach(function (id) {
       var c = S.cartaPorId(id);
-      assert(!c || S.run.terminada || !S.disponible(c), 'baja disponible en la jornada siguiente: ' + (c && c.nombre));
+      assert(!c || S.run.terminada || !S.disponible(c), 'absent player available next matchday: ' + (c && c.nombre));
     });
-    assert(S.run.oro >= 0, 'oro negativo');
-    assert(S.run.plantilla.length <= S.MAX_PLANTILLA, 'plantilla excede el máximo');
+    assert(S.run.oro >= 0, 'negative gold');
+    assert(S.run.plantilla.length <= S.MAX_PLANTILLA, 'squad exceeds the maximum');
     jornadasRun++;
   }
   resumen.runs++;
-  resumen.jornadas += jornadasRun;
+  resumen.matchdays += jornadasRun;
   var tabla = ctx.League.clasificacion();
   var pj = tabla.map(function (e) { return e.pj; });
-  assert(pj.every(function (x) { return x === pj[0]; }), 'equipos con distinto nº de partidos: ' + pj);
-  if (S.run.stats && ctx.League.puestoJugador() === 1 && S.run.jornada >= 14) resumen.titulos++;
-  resumen.goles += S.run.stats.gf;
+  assert(pj.every(function (x) { return x === pj[0]; }), 'teams with different games played: ' + pj);
+  if (S.run.stats && ctx.League.puestoJugador() === 1 && S.run.jornada >= 14) resumen.titles++;
+  resumen.goals += S.run.stats.gf;
 }
 
 console.log('OK', JSON.stringify(resumen));

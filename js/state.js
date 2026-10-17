@@ -1,17 +1,17 @@
 /* ============================================================
-   STATE — estado de la run: plantilla, alineación por formación,
-   táctica, cohesión, moral, calendario y meta-progresión.
+   STATE — run state: squad, formation-based lineup, tactics,
+   cohesion, morale, fixtures and meta-progression.
    ============================================================ */
 
 var State = (function () {
 
   var run = null;
 
-  var JORNADAS_JEFE = { 5: '🔥 DERBI', 10: '⚡ DUELO EN LA CIMA', 14: '👑 FINAL DE INFARTO' };
+  var JORNADAS_JEFE = { 5: '🔥 DERBY DAY', 10: '⚡ TOP-OF-THE-TABLE CLASH', 14: '👑 FINAL-DAY DECIDER' };
   var MAX_PLANTILLA = 18;
   var MAX_STAFF = 3;
 
-  // ---- calendario: round-robin doble (8 equipos, 14 jornadas) ----
+  // ---- fixtures: double round-robin (8 teams, 14 matchdays) ----
   function generarCalendario() {
     var n = 8;
     var ids = [0, 1, 2, 3, 4, 5, 6, 7];
@@ -52,7 +52,7 @@ var State = (function () {
       tactica: Formations.tacticaBase(),
       cohesion: { '4-3-3': 40 },
       moral: 60,
-      pichichi: {},
+      topScorers: {},
       stats: {
         pg: 0, pe: 0, pp: 0, gf: 0, gc: 0,
         oroGanado: 0, oroGastado: 0, cartasCompradas: 0, cartasVendidas: 0,
@@ -63,7 +63,7 @@ var State = (function () {
     return run;
   }
 
-  // ---- formación / táctica ----
+  // ---- formation / tactics ----
   function slotsActuales() {
     return Formations.DEFS[run.tactica.formacion].slots;
   }
@@ -80,7 +80,7 @@ var State = (function () {
     return run.cohesion[run.tactica.formacion] || 0;
   }
 
-  // ¿la plantilla puede cubrir esta formación? (jugadores sanos por posición)
+  // can the squad field this formation? (available players per position)
   function puedeFormacion(key) {
     var req = Formations.req(key);
     var disp = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
@@ -92,7 +92,7 @@ var State = (function () {
 
   function cambiarFormacion(key) {
     if (!Formations.DEFS[key] || key === run.tactica.formacion) return false;
-    // conserva a los alineados reasignándolos por posición
+    // keep the current starters, reassigning them by position
     var previos = { GK: [], DEF: [], MID: [], FWD: [] };
     slotsActuales().forEach(function (sl, i) {
       var c = cartaPorId(run.alineacion[i]);
@@ -108,7 +108,7 @@ var State = (function () {
     return true;
   }
 
-  // ---- alineación ----
+  // ---- lineup ----
   function cartaPorId(id) {
     if (!id) return null;
     return run.plantilla.filter(function (c) { return c.id === id; })[0] || null;
@@ -129,7 +129,7 @@ var State = (function () {
   function autoAlinear() {
     run.alineacion = new Array(11).fill(null);
     var libres = run.plantilla.filter(disponible);
-    // media + condición: rota de forma natural a los fundidos
+    // rating + condition: naturally rotates out tired players
     libres.sort(function (a, b) {
       return (b.media + b.condicion * 0.15) - (a.media + a.condicion * 0.15);
     });
@@ -161,7 +161,7 @@ var State = (function () {
     });
   }
 
-  // ---- plantilla ----
+  // ---- squad ----
   function agregarCarta(carta) {
     if (carta.type === 'staff') {
       if (run.staff.length >= MAX_STAFF) return false;
@@ -187,7 +187,7 @@ var State = (function () {
     return run.staff.some(function (s) { return s.key === key; });
   }
 
-  // ---- partidos / jornadas ----
+  // ---- matches / matchdays ----
   function esJefe(jornada) { return !!JORNADAS_JEFE[jornada]; }
   function etiquetaJefe(jornada) { return JORNADAS_JEFE[jornada] || null; }
 
@@ -214,10 +214,18 @@ var State = (function () {
     return total;
   }
 
-  // ---- meta-progresión ----
+  // ---- meta-progression ----
+  var META_KEY = 'relegation-run:meta';
+
   function meta() {
     try {
-      return JSON.parse(localStorage.getItem('rm_meta') || '{"runs":0,"victorias":0,"mejorPuesto":null,"mejorRacha":0}');
+      var raw = localStorage.getItem(META_KEY);
+      if (raw === null) {
+        // one-off migration from the legacy key
+        raw = localStorage.getItem('rm_meta');
+        if (raw !== null) localStorage.setItem(META_KEY, raw);
+      }
+      return JSON.parse(raw || '{"runs":0,"victorias":0,"mejorPuesto":null,"mejorRacha":0}');
     } catch (e) { return { runs: 0, victorias: 0, mejorPuesto: null, mejorRacha: 0 }; }
   }
 
@@ -227,7 +235,7 @@ var State = (function () {
     if (resultado.victoria) m.victorias++;
     if (m.mejorPuesto === null || resultado.puesto < m.mejorPuesto) m.mejorPuesto = resultado.puesto;
     if (resultado.pg > m.mejorRacha) m.mejorRacha = resultado.pg;
-    try { localStorage.setItem('rm_meta', JSON.stringify(m)); } catch (e) { /* sin storage */ }
+    try { localStorage.setItem(META_KEY, JSON.stringify(m)); } catch (e) { /* no storage */ }
   }
 
   return {
