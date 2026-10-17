@@ -2,7 +2,7 @@
 
 ## Round 3: season card + Hall of Fame (branch `rr-4-season-card`)
 
-- **Season card.** A shareable 1080×1350 PNG drawn on a canvas, with Web Share, PNG download and a Wordle-style text summary.
+- **Season card.** A shareable 1200×630 PNG drawn on a canvas, with Web Share, PNG download and a Wordle-style text summary.
 - **Hall of Fame.** A ranked, persistent history of every run (`relegation-run:hall`) with career totals and personal records. Any run's card can be reopened from it.
 - **Tests.** Added 14 tests in `tests/hall.js`, and the browser check now covers the real canvas and the Hall of Fame. See `PR_NOTES.md`.
 

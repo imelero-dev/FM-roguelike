@@ -53,7 +53,9 @@ At the end of the season (or when you're sacked) you get a **season review**. It
 
 ### Season card and Hall of Fame
 
-Every finished run, title or sacking, gets a **season card**: a 1080×1350 image (4:5, the size feeds display best) with your club crest, the verdict, position, points, W-D-L, goals, a colour-coded square for every matchday (boss matches outlined, unplayed ones dashed), your player of the season with their pixel portrait, the top scorer and assist maker, and any new personal records.
+Every finished run, title or sacking, gets a **season card**: a 1200×630 image (the size link previews and most feeds expect) with your club crest, the verdict, position, points, W-D-L, goals, a colour-coded square for every matchday (boss matches outlined, unplayed ones dashed), your player of the season with their pixel portrait, the top scorer and assist maker, the rarity mix of your final XI and any new personal records.
+
+![Season card: club crest, verdict, stats, results strip, player of the season, top scorer and assists, final XI rarities](docs/screenshots/season-card.png)
 
 - **📤 Share card** opens your device's share sheet with the PNG where the browser supports it (most phones). Elsewhere it saves the PNG and copies the text summary.
 - **⬇️ Save PNG** downloads the image.
@@ -67,7 +69,11 @@ Athletic Northport · 1st · 34 pts
 🏅 Leo Marsh (7.84)
 ```
 
-Every run is also carved into the **🏛️ Hall of Fame**, reachable from the main menu and the end screen. It shows career totals (runs, titles, win rate, best finish, most points, best win streak) and lists every run, sorted by **Best** (titles first, then final position, points, goal difference and goals) or **Recent**. Tap any run to reopen and share its card. New records (first title, best finish, most points, most goals, longest win streak) are flagged on the end screen and printed on the card.
+Every run is also carved into the **🏛️ Hall of Fame**, reachable from the main menu and the end screen. It shows career totals (runs, titles, title rate, best finish, most points, best win streak) and lists up to 20 runs, sorted by **Best** (titles first, then final position, points, goal difference and goals) or **Recent**. Tap any run to reopen and share its card. New records (first title, best finish, most points, most goals, longest win streak) are flagged on the end screen and printed on the card.
+
+![Hall of Fame: career totals, Best/Recent sort and a ranked run](docs/screenshots/hall-of-fame.png)
+
+*Both screenshots come from the automated browser check, which ends a run after two matchdays, so most of the season strip is empty.*
 
 ### Saving
 
@@ -87,7 +93,7 @@ The game **autosaves** after every management action and as soon as a match ends
 | **Economy** | Gold from wins, objectives and sales. Wages are paid every matchday. The shop has rerolls, and transfers are negotiated with an AI that has hidden patience and a hidden reserve price. |
 | **Fitness, form, morale** | Playing drains condition according to Stamina, and tired players perform worse and get injured more. Form follows match ratings, and morale follows results. |
 | **Season review** | Results strip, awards, per-player stats and the final table. |
-| **Season card & Hall of Fame** | Shareable 4:5 PNG card drawn on a canvas (Web Share API, download or clipboard text) and a ranked, persistent history of every run with personal records. |
+| **Season card & Hall of Fame** | Shareable 1200×630 PNG card drawn on a canvas (Web Share API, download or clipboard text) and a ranked, persistent history of every run with personal records. |
 | **Save / resume** | Versioned autosave in `localStorage` with validation and anti-replay. |
 | **Presentation** | Phaser renders the match (striped pitch, ball flight with shadow and trail, animated cards, celebrations, live HUD). Portraits are deterministic procedural pixel art and the sound is synthesised with WebAudio, so the game ships no binary assets. |
 | **Mobile** | App-style bottom navigation, swipeable bench, bottom-sheet modals and touch steppers. |
@@ -128,7 +134,7 @@ tests/              Dependency-free Node and headless-Chrome tests
 | Key | Contents |
 |---|---|
 | `relegation-run:save` | `{ version, savedAt, phase, idSeq, run }`. The single autosave slot. `phase` is `manage` or `post`. The save is ignored if the version or shape doesn't match. |
-| `relegation-run:hall` | `{ version, entries }`. The Hall of Fame: one self-contained snapshot per finished run (team, verdict, record, results strip, award winners), enough to redraw its card. It is capped at 100 runs and trims from the bottom of the ranking, never the run just played. Invalid data is ignored. |
+| `relegation-run:hall` | `{ version, entries }`. The Hall of Fame: one self-contained snapshot per finished run (team, verdict, record, results strip, award winners), enough to redraw its card. It keeps up to 20 runs and trims from the bottom of the ranking, never the run just played. Invalid data is ignored. |
 | `relegation-run:meta` | Lifetime record: runs, titles, best finish, best winning tally. The legacy key `rm_meta` is migrated automatically. |
 
 ## 🧪 Testing
