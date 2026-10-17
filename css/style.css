@@ -608,8 +608,9 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .drop-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: center; }
 
 /* ---------- end of run ---------- */
-#screen-end { align-items: center; justify-content: center; text-align: center; overflow-y: auto; }
-.end-content { padding: 40px; max-width: 620px; width: 100%; margin: auto; }
+/* margin:auto centres short content; flex-start + no shrink keeps the top reachable when it scrolls */
+#screen-end { align-items: center; justify-content: flex-start; text-align: center; overflow-y: auto; }
+.end-content { padding: 40px; max-width: 620px; width: 100%; margin: auto; flex-shrink: 0; }
 #end-title { font-size: 56px; margin-bottom: 10px; animation: titlePop 0.6s ease; }
 .end-win { color: var(--gold); text-shadow: 0 5px 0 #7a5a00, 0 0 50px rgba(255,213,74,0.55); }
 .end-lose { color: var(--red); text-shadow: 0 5px 0 #6e1520; }

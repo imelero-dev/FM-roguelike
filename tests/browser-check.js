@@ -145,6 +145,8 @@ function esperar(ms) { return new Promise(function (r) { setTimeout(r, ms); }); 
     var png = await js('document.getElementById("end-card-canvas").toDataURL("image/png")');
     fs.writeFileSync(path.join(SHOTS, 'season-card.png'), Buffer.from(png.split(',')[1], 'base64'));
   }
+  // the top of a long end screen must stay reachable (flex centring used to push it above the scroll area)
+  if (!await js('document.querySelector(".end-content").getBoundingClientRect().top >= document.getElementById("screen-end").getBoundingClientRect().top - 1')) problemas.push('END: top of the end screen is cut off');
   // copy text works from file:// (falls back to execCommand without the Clipboard API)
   await js('document.getElementById("btn-end-copy").click()');
 
