@@ -1,5 +1,12 @@
 # Improvements log
 
+## Round 3: match presentation (branch `rr-2-match-presentation`, spec RR-2)
+
+- **Commentary.** New `js/commentary.js` holds 3-5 phrasings for every feed event (separate pools for penalties and headers). A commentator never uses the same phrasing for two consecutive events of one kind. Shots with engine xG ≥ 0.4 get a live "big chance" call while the ball is in flight (visual mode only, so the skip summary stays short). Shot events now carry `xg`, `cabeza` and `penalti` (commentary data only: no gameplay or RNG change).
+- **Half-time card.** Built on the existing panel: team names, possession, shots (on target), xG, fouls, the top performer (highest live rating on the pitch, with goals/assists/saves) and the two key moments (goals > red cards > penalty misses > woodwork > big chances, shown in match order).
+- **Tests.** `tests/presentation.js` (7 tests, in `npm test`). The browser check asserts the card in Chrome, saves `half-time.png` and accepts `WINDOW_SIZE`.
+- **Left out:** the goal replay (needs a position ring buffer in the engine; follow-up).
+
 ## Round 2: Relegation Run (branch `mejoras-claude`)
 
 **Summary:** the game is now **Relegation Run — a football management roguelike**. It is fully in English, saves and resumes runs, ends each season with a review screen, and ships with an MIT license and a reference-style README. All tests pass.
