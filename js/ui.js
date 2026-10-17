@@ -164,13 +164,13 @@ var UI = (function () {
 
     html += habsHTML(c);
 
-    // grupos de atributos: portero primero si es POR
+    // grupos de atributos: portero primero si es GK
     var grupos = Attrs.GRUPOS.slice();
-    if (c.pos === 'POR') grupos = [grupos[3], grupos[1], grupos[2], grupos[0]];
+    if (c.pos === 'GK') grupos = [grupos[3], grupos[1], grupos[2], grupos[0]];
     html += '<div class="ficha-grid">';
     grupos.forEach(function (g) {
       // no ensucia la ficha de un jugador de campo con la portería
-      if (c.pos !== 'POR' && g.key === 'portero') return;
+      if (c.pos !== 'GK' && g.key === 'portero') return;
       html += '<div class="ficha-grupo"><h5>' + g.nombre + '</h5>';
       g.attrs.forEach(function (a) {
         var v = c.attrs[a];
@@ -363,7 +363,7 @@ var UI = (function () {
       card.innerHTML =
         '<div class="fc-nombre">' + def.nombre + '</div>' +
         miniPitchHTML(key) +
-        '<div class="fc-req">' + req.DEF + ' DEF · ' + req.MED + ' MED · ' + req.DEL + ' DEL</div>' +
+        '<div class="fc-req">' + req.DEF + ' DEF · ' + req.MID + ' MID · ' + req.FWD + ' FWD</div>' +
         '<div class="fc-coh"><span class="coh-bar"><i style="width:' + coh + '%"></i></span> ' + coh + '%</div>' +
         (puede ? '' : '<div class="fc-lock">Sin efectivos</div>');
       card.title = def.desc;

@@ -43,7 +43,7 @@ var Gen = (function () {
   var COLORES = [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71, 0x9b59b6, 0xe67e22, 0x1abc9c, 0xecf0f1, 0xd35400, 0x34495e];
 
   var TAGS = ['Cantera', 'Galáctico', 'Físico', 'Técnico'];
-  var POSICIONES = ['POR', 'DEF', 'MED', 'DEL'];
+  var POSICIONES = ['GK', 'DEF', 'MID', 'FWD'];
 
   var RAREZAS = {
     comun:      { nombre: 'Común',      color: '#8a919e', habMax: 1, precio: 60,  salario: 4 },
@@ -58,14 +58,14 @@ var Gen = (function () {
   var HABILIDADES = {
     clutch:        { nombre: 'Clutch',        icono: '⏱', desc: '+2 a todos sus atributos a partir del minuto 75' },
     muro:          { nombre: 'Muro',          icono: '🧱', desc: '+2 Marcaje, Colocación y Cabeza', pos: ['DEF'] },
-    killer:        { nombre: 'Killer',        icono: '🎯', desc: '+3 Remate dentro del área', pos: ['DEL', 'MED'] },
+    killer:        { nombre: 'Killer',        icono: '🎯', desc: '+3 Remate dentro del área', pos: ['FWD', 'MID'] },
     motor:         { nombre: 'Motor',         icono: '⚙️', desc: 'Gasta un 30% menos de energía durante el partido' },
     capitan:       { nombre: 'Capitán',       icono: '🎖', desc: '+1 Compostura y Decisiones a todo el equipo' },
     velocista:     { nombre: 'Velocista',     icono: '💨', desc: '+2 Velocidad y Aceleración' },
-    cerrojo:       { nombre: 'Cerrojo',       icono: '🔒', desc: '+2 Reflejos y 1 contra 1', pos: ['POR'] },
-    francotirador: { nombre: 'Francotirador', icono: '🏹', desc: '+3 Tiros lejanos y busca el disparo desde fuera', pos: ['DEL', 'MED'] },
+    cerrojo:       { nombre: 'Cerrojo',       icono: '🔒', desc: '+2 Reflejos y 1 contra 1', pos: ['GK'] },
+    francotirador: { nombre: 'Francotirador', icono: '🏹', desc: '+3 Tiros lejanos y busca el disparo desde fuera', pos: ['FWD', 'MID'] },
     fajador:       { nombre: 'Fajador',       icono: '🛡', desc: '+2 Fuerza y Agresividad; +1 a todo en partidos jefe' },
-    estrella:      { nombre: 'Estrella',      icono: '⭐', desc: '+1 a todos sus atributos ofensivos', pos: ['DEL', 'MED'] }
+    estrella:      { nombre: 'Estrella',      icono: '⭐', desc: '+1 a todos sus atributos ofensivos', pos: ['FWD', 'MID'] }
   };
 
   var idSeq = 1;
@@ -170,7 +170,7 @@ var Gen = (function () {
       });
     });
     // una estrella por equipo: mejora al mejor atacante
-    var atacantes = jugadores.filter(function (j) { return j.pos === 'DEL' || j.pos === 'MED'; });
+    var atacantes = jugadores.filter(function (j) { return j.pos === 'FWD' || j.pos === 'MID'; });
     if (atacantes.length) {
       var estrella = RNG.pick(atacantes);
       Object.keys(estrella.attrs).forEach(function (a) {
@@ -213,10 +213,10 @@ var Gen = (function () {
   // Plantilla inicial: 15 cartas — cubre cualquiera de las 7 formaciones
   function plantillaInicial() {
     var plan = [
-      ['POR', 'comun'], ['POR', 'comun'],
+      ['GK', 'comun'], ['GK', 'comun'],
       ['DEF', 'comun'], ['DEF', 'comun'], ['DEF', 'comun'], ['DEF', 'comun'], ['DEF', 'rara'],
-      ['MED', 'comun'], ['MED', 'comun'], ['MED', 'comun'], ['MED', 'rara'], ['MED', 'comun'],
-      ['DEL', 'comun'], ['DEL', 'rara'], ['DEL', 'comun']
+      ['MID', 'comun'], ['MID', 'comun'], ['MID', 'comun'], ['MID', 'rara'], ['MID', 'comun'],
+      ['FWD', 'comun'], ['FWD', 'rara'], ['FWD', 'comun']
     ];
     return plan.map(function (p) { return cartaJugador(p[0], p[1]); });
   }

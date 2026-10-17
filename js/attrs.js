@@ -35,7 +35,7 @@ var Attrs = (function () {
   // Perfil por posición: qué atributos definen al jugador (alto),
   // cuáles acompañan (medio) y el resto sale bajo.
   var PERFILES = {
-    POR: {
+    GK: {
       alto: ['reflejos', 'paradas', 'unoContraUno', 'colocacion', 'concentracion', 'agilidad'],
       medio: ['salidas', 'juegoAereo', 'saques', 'compostura', 'decisiones', 'salto', 'fuerza', 'equilibrio'],
       // los porteros apenas usan el resto del juego de campo
@@ -45,11 +45,11 @@ var Attrs = (function () {
       alto: ['marcaje', 'entradas', 'colocacion', 'anticipacion', 'cabeza', 'fuerza'],
       medio: ['salto', 'concentracion', 'agresividad', 'equilibrio', 'pase', 'decisiones', 'velocidad', 'aceleracion', 'resistencia', 'sacrificio', 'primerToque']
     },
-    MED: {
+    MID: {
       alto: ['pase', 'vision', 'tecnica', 'primerToque', 'decisiones', 'resistencia'],
       medio: ['regate', 'anticipacion', 'entradas', 'compostura', 'colocacion', 'tirosLejanos', 'sacrificio', 'desmarque', 'centros', 'agilidad', 'equilibrio', 'aceleracion', 'velocidad', 'concentracion']
     },
-    DEL: {
+    FWD: {
       alto: ['remate', 'desmarque', 'compostura', 'aceleracion', 'regate'],
       medio: ['velocidad', 'primerToque', 'tecnica', 'cabeza', 'vision', 'agilidad', 'equilibrio', 'salto', 'tirosLejanos', 'decisiones', 'fuerza', 'anticipacion', 'concentracion', 'resistencia']
     }
@@ -57,15 +57,15 @@ var Attrs = (function () {
 
   // Ponderación de la media (1-99) por posición
   var PESOS_MEDIA = {
-    POR: { reflejos: 3, paradas: 3, unoContraUno: 2.5, salidas: 2, juegoAereo: 2, saques: 1, colocacion: 2, concentracion: 1.5, compostura: 1, decisiones: 1, agilidad: 2, salto: 1 },
+    GK: { reflejos: 3, paradas: 3, unoContraUno: 2.5, salidas: 2, juegoAereo: 2, saques: 1, colocacion: 2, concentracion: 1.5, compostura: 1, decisiones: 1, agilidad: 2, salto: 1 },
     DEF: { marcaje: 3, entradas: 3, colocacion: 2.5, anticipacion: 2, cabeza: 2, fuerza: 2, salto: 1.5, concentracion: 1.5, velocidad: 1.5, aceleracion: 1, pase: 1, agresividad: 0.8, equilibrio: 0.8, decisiones: 1 },
-    MED: { pase: 3, vision: 2.5, tecnica: 2, primerToque: 2, decisiones: 2, resistencia: 1.5, sacrificio: 1.3, regate: 1.5, anticipacion: 1, entradas: 1, compostura: 1, tirosLejanos: 0.8, desmarque: 0.8, colocacion: 0.8 },
-    DEL: { remate: 3, desmarque: 2.5, compostura: 2, aceleracion: 2, regate: 2, primerToque: 1.5, velocidad: 1.5, tecnica: 1.2, cabeza: 1, vision: 1, agilidad: 1, decisiones: 0.8, equilibrio: 0.7 }
+    MID: { pase: 3, vision: 2.5, tecnica: 2, primerToque: 2, decisiones: 2, resistencia: 1.5, sacrificio: 1.3, regate: 1.5, anticipacion: 1, entradas: 1, compostura: 1, tirosLejanos: 0.8, desmarque: 0.8, colocacion: 0.8 },
+    FWD: { remate: 3, desmarque: 2.5, compostura: 2, aceleracion: 2, regate: 2, primerToque: 1.5, velocidad: 1.5, tecnica: 1.2, cabeza: 1, vision: 1, agilidad: 1, decisiones: 0.8, equilibrio: 0.7 }
   };
 
   // Resumen de 4 barras para la carta compacta (etiqueta + atributos que promedia)
   var RESUMEN = {
-    POR: [
+    GK: [
       ['REF', ['reflejos', 'agilidad']],
       ['PAR', ['paradas', 'unoContraUno']],
       ['SAL', ['salidas', 'juegoAereo']],
@@ -92,8 +92,8 @@ var Attrs = (function () {
     var attrs = {};
     TODOS.forEach(function (a) {
       var esPortero = GRUPOS[3].attrs.indexOf(a) >= 0;
-      if (pos !== 'POR' && esPortero) { attrs[a] = rollAttr(2.5, 1.2); return; }
-      if (pos === 'POR' && !esPortero && perfil.alto.indexOf(a) < 0 && perfil.medio.indexOf(a) < 0) {
+      if (pos !== 'GK' && esPortero) { attrs[a] = rollAttr(2.5, 1.2); return; }
+      if (pos === 'GK' && !esPortero && perfil.alto.indexOf(a) < 0 && perfil.medio.indexOf(a) < 0) {
         attrs[a] = rollAttr(4.5, 1.8); return;
       }
       if (perfil.alto.indexOf(a) >= 0) attrs[a] = rollAttr(nivel + 2.6, 1.9);
@@ -124,7 +124,7 @@ var Attrs = (function () {
 
   // 4 barras resumidas (1-99) para la carta compacta
   function resumen(carta) {
-    var defs = carta.pos === 'POR' ? RESUMEN.POR : RESUMEN.campo;
+    var defs = carta.pos === 'GK' ? RESUMEN.GK : RESUMEN.campo;
     return defs.map(function (d) {
       var s = 0;
       d[1].forEach(function (a) { s += carta.attrs[a]; });

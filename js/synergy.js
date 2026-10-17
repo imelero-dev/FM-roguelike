@@ -128,7 +128,7 @@ var Synergy = (function () {
         eff.marcaje += 2; eff.colocacion += 2; eff.cabeza += 2;
       }
       if (c.habilidades.indexOf('velocista') >= 0) { eff.velocidad += 2; eff.aceleracion += 2; }
-      if (c.habilidades.indexOf('cerrojo') >= 0 && c.pos === 'POR') { eff.reflejos += 2; eff.unoContraUno += 2; }
+      if (c.habilidades.indexOf('cerrojo') >= 0 && c.pos === 'GK') { eff.reflejos += 2; eff.unoContraUno += 2; }
       if (c.habilidades.indexOf('francotirador') >= 0) eff.tirosLejanos += 3;
       if (c.habilidades.indexOf('fajador') >= 0) {
         eff.fuerza += 2; eff.agresividad += 2;

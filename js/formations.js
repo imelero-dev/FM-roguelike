@@ -22,72 +22,72 @@ var Formations = (function () {
       nombre: '4-3-3',
       desc: 'Extremos abiertos y tridente arriba. Domina las bandas en ataque; el centro del campo puede quedar justo.',
       slots: [
-        s('POR', 'GK', 0.045, 0.5),
+        s('GK', 'GK', 0.045, 0.5),
         s('DEF', 'FB', 0.175, 0.11), s('DEF', 'CB', 0.15, 0.36), s('DEF', 'CB', 0.15, 0.64), s('DEF', 'FB', 0.175, 0.89),
-        s('MED', 'CM', 0.36, 0.28), s('MED', 'DM', 0.30, 0.5), s('MED', 'CM', 0.36, 0.72),
-        s('DEL', 'W', 0.60, 0.13), s('DEL', 'ST', 0.65, 0.5), s('DEL', 'W', 0.60, 0.87)
+        s('MID', 'CM', 0.36, 0.28), s('MID', 'DM', 0.30, 0.5), s('MID', 'CM', 0.36, 0.72),
+        s('FWD', 'W', 0.60, 0.13), s('FWD', 'ST', 0.65, 0.5), s('FWD', 'W', 0.60, 0.87)
       ]
     },
     '4-4-2': {
       nombre: '4-4-2',
       desc: 'Dos líneas de cuatro: sólido, directo y fácil de mantener. Puede verse superado en el centro contra tres medios.',
       slots: [
-        s('POR', 'GK', 0.045, 0.5),
+        s('GK', 'GK', 0.045, 0.5),
         s('DEF', 'FB', 0.175, 0.11), s('DEF', 'CB', 0.15, 0.36), s('DEF', 'CB', 0.15, 0.64), s('DEF', 'FB', 0.175, 0.89),
-        s('MED', 'WM', 0.40, 0.10), s('MED', 'CM', 0.37, 0.37), s('MED', 'CM', 0.37, 0.63), s('MED', 'WM', 0.40, 0.90),
-        s('DEL', 'ST', 0.63, 0.38), s('DEL', 'ST', 0.63, 0.62)
+        s('MID', 'WM', 0.40, 0.10), s('MID', 'CM', 0.37, 0.37), s('MID', 'CM', 0.37, 0.63), s('MID', 'WM', 0.40, 0.90),
+        s('FWD', 'ST', 0.63, 0.38), s('FWD', 'ST', 0.63, 0.62)
       ]
     },
     '4-2-3-1': {
       nombre: '4-2-3-1',
       desc: 'Doble pivote y mediapunta entre líneas. Control del centro y equilibrio; el delantero puede quedarse solo.',
       slots: [
-        s('POR', 'GK', 0.045, 0.5),
+        s('GK', 'GK', 0.045, 0.5),
         s('DEF', 'FB', 0.175, 0.11), s('DEF', 'CB', 0.15, 0.36), s('DEF', 'CB', 0.15, 0.64), s('DEF', 'FB', 0.175, 0.89),
-        s('MED', 'DM', 0.29, 0.38), s('MED', 'DM', 0.29, 0.62),
-        s('MED', 'W', 0.47, 0.13), s('MED', 'AM', 0.46, 0.5), s('MED', 'W', 0.47, 0.87),
-        s('DEL', 'ST', 0.65, 0.5)
+        s('MID', 'DM', 0.29, 0.38), s('MID', 'DM', 0.29, 0.62),
+        s('MID', 'W', 0.47, 0.13), s('MID', 'AM', 0.46, 0.5), s('MID', 'W', 0.47, 0.87),
+        s('FWD', 'ST', 0.65, 0.5)
       ]
     },
     '3-5-2': {
       nombre: '3-5-2',
       desc: 'Cinco en el medio: superioridad interior y carrileros que dan amplitud. Sufre contra extremos rápidos.',
       slots: [
-        s('POR', 'GK', 0.045, 0.5),
+        s('GK', 'GK', 0.045, 0.5),
         s('DEF', 'CB', 0.155, 0.25), s('DEF', 'CB', 0.14, 0.5), s('DEF', 'CB', 0.155, 0.75),
-        s('MED', 'WB', 0.33, 0.07), s('MED', 'CM', 0.37, 0.32), s('MED', 'DM', 0.30, 0.5), s('MED', 'CM', 0.37, 0.68), s('MED', 'WB', 0.33, 0.93),
-        s('DEL', 'ST', 0.63, 0.40), s('DEL', 'ST', 0.63, 0.60)
+        s('MID', 'WB', 0.33, 0.07), s('MID', 'CM', 0.37, 0.32), s('MID', 'DM', 0.30, 0.5), s('MID', 'CM', 0.37, 0.68), s('MID', 'WB', 0.33, 0.93),
+        s('FWD', 'ST', 0.63, 0.40), s('FWD', 'ST', 0.63, 0.60)
       ]
     },
     '3-4-3': {
       nombre: '3-4-3',
       desc: 'Muy ofensivo: tres arriba y medios abiertos. Genera muchísimo, pero deja espacios a la espalda.',
       slots: [
-        s('POR', 'GK', 0.045, 0.5),
+        s('GK', 'GK', 0.045, 0.5),
         s('DEF', 'CB', 0.155, 0.25), s('DEF', 'CB', 0.14, 0.5), s('DEF', 'CB', 0.155, 0.75),
-        s('MED', 'WM', 0.37, 0.09), s('MED', 'CM', 0.35, 0.37), s('MED', 'CM', 0.35, 0.63), s('MED', 'WM', 0.37, 0.91),
-        s('DEL', 'W', 0.61, 0.15), s('DEL', 'ST', 0.65, 0.5), s('DEL', 'W', 0.61, 0.85)
+        s('MID', 'WM', 0.37, 0.09), s('MID', 'CM', 0.35, 0.37), s('MID', 'CM', 0.35, 0.63), s('MID', 'WM', 0.37, 0.91),
+        s('FWD', 'W', 0.61, 0.15), s('FWD', 'ST', 0.65, 0.5), s('FWD', 'W', 0.61, 0.85)
       ]
     },
     '5-3-2': {
       nombre: '5-3-2',
       desc: 'Cerrojo con cinco atrás y dos puntas al contragolpe. Muy difícil de batir, poca producción ofensiva.',
       slots: [
-        s('POR', 'GK', 0.045, 0.5),
+        s('GK', 'GK', 0.045, 0.5),
         s('DEF', 'WB', 0.19, 0.07), s('DEF', 'CB', 0.145, 0.28), s('DEF', 'CB', 0.13, 0.5), s('DEF', 'CB', 0.145, 0.72), s('DEF', 'WB', 0.19, 0.93),
-        s('MED', 'CM', 0.35, 0.30), s('MED', 'DM', 0.32, 0.5), s('MED', 'CM', 0.35, 0.70),
-        s('DEL', 'ST', 0.60, 0.40), s('DEL', 'ST', 0.60, 0.60)
+        s('MID', 'CM', 0.35, 0.30), s('MID', 'DM', 0.32, 0.5), s('MID', 'CM', 0.35, 0.70),
+        s('FWD', 'ST', 0.60, 0.40), s('FWD', 'ST', 0.60, 0.60)
       ]
     },
     '4-1-4-1': {
       nombre: '4-1-4-1',
       desc: 'Bloque medio compacto con pivote posicional. Equilibrado y pesado de atacar; necesita un punta que aguante solo.',
       slots: [
-        s('POR', 'GK', 0.045, 0.5),
+        s('GK', 'GK', 0.045, 0.5),
         s('DEF', 'FB', 0.175, 0.11), s('DEF', 'CB', 0.15, 0.36), s('DEF', 'CB', 0.15, 0.64), s('DEF', 'FB', 0.175, 0.89),
-        s('MED', 'DM', 0.27, 0.5),
-        s('MED', 'WM', 0.42, 0.10), s('MED', 'CM', 0.40, 0.37), s('MED', 'CM', 0.40, 0.63), s('MED', 'WM', 0.42, 0.90),
-        s('DEL', 'ST', 0.65, 0.5)
+        s('MID', 'DM', 0.27, 0.5),
+        s('MID', 'WM', 0.42, 0.10), s('MID', 'CM', 0.40, 0.37), s('MID', 'CM', 0.40, 0.63), s('MID', 'WM', 0.42, 0.90),
+        s('FWD', 'ST', 0.65, 0.5)
       ]
     }
   };
@@ -95,7 +95,7 @@ var Formations = (function () {
   var LISTA = Object.keys(DEFS);
 
   function req(key) {
-    var r = { POR: 0, DEF: 0, MED: 0, DEL: 0 };
+    var r = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
     DEFS[key].slots.forEach(function (sl) { r[sl.pos]++; });
     return r;
   }
@@ -148,7 +148,7 @@ var Formations = (function () {
       if (ancho) p.banda++; else p.centro++;
       if (sl.x >= 0.25 && sl.x <= 0.52) p.medios++;
       if (sl.pos === 'DEF') p.atras++;
-      if (sl.pos === 'DEL') p.arriba++;
+      if (sl.pos === 'FWD') p.arriba++;
     });
     return p;
   }

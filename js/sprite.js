@@ -30,10 +30,10 @@ var Sprite = (function () {
   var PIEL = ['#ffd9b3', '#f2b98c', '#d69a6b', '#a9714b', '#7c4f33'];
   var PELO = ['#191919', '#332414', '#3a2a1a', '#6b4a2a', '#a8742f', '#d9c26a', '#8a8a8a', '#7a2e1d'];
   var KIT_POS = {
-    POR: ['#c9a227', '#8a6d12'],
+    GK: ['#c9a227', '#8a6d12'],
     DEF: ['#2e7cd6', '#1b4f8f'],
-    MED: ['#2fa45c', '#1d6e3c'],
-    DEL: ['#d64545', '#8f2626'],
+    MID: ['#2fa45c', '#1d6e3c'],
+    FWD: ['#d64545', '#8f2626'],
     STAFF: ['#3a3358', '#241f38']
   };
 
@@ -51,7 +51,7 @@ var Sprite = (function () {
     var estilo = Math.floor(r() * 6); // 0 rapado 1 corto 2 puntas 3 melena 4 afro 5 calvo
     var barba = r() < 0.3;
     var bigote = !barba && r() < 0.15;
-    var kit = KIT_POS[pos] || KIT_POS.MED;
+    var kit = KIT_POS[pos] || KIT_POS.MID;
     var rayas = pos !== 'STAFF' && r() < 0.4;
 
     // fondo transparente

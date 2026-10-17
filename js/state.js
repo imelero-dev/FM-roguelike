@@ -83,7 +83,7 @@ var State = (function () {
   // ¿la plantilla puede cubrir esta formación? (jugadores sanos por posición)
   function puedeFormacion(key) {
     var req = Formations.req(key);
-    var disp = { POR: 0, DEF: 0, MED: 0, DEL: 0 };
+    var disp = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
     run.plantilla.forEach(function (c) {
       if (c.lesion === 0 && c.sancion === 0) disp[c.pos]++;
     });
@@ -93,7 +93,7 @@ var State = (function () {
   function cambiarFormacion(key) {
     if (!Formations.DEFS[key] || key === run.tactica.formacion) return false;
     // conserva a los alineados reasignándolos por posición
-    var previos = { POR: [], DEF: [], MED: [], DEL: [] };
+    var previos = { GK: [], DEF: [], MID: [], FWD: [] };
     slotsActuales().forEach(function (sl, i) {
       var c = cartaPorId(run.alineacion[i]);
       if (c) previos[sl.pos].push(c.id);

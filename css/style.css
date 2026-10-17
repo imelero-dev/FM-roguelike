@@ -357,10 +357,10 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
   font-family: var(--font-display);
   box-shadow: 0 2px 0 rgba(0,0,0,0.4);
 }
-.pos-POR { background: #7a5a12; }
+.pos-GK { background: #7a5a12; }
 .pos-DEF { background: #14508a; }
-.pos-MED { background: #1f7a45; }
-.pos-DEL { background: #8a2434; }
+.pos-MID { background: #1f7a45; }
+.pos-FWD { background: #8a2434; }
 .card-media { font-size: 22px; color: var(--gold); text-shadow: 0 2px 0 rgba(0,0,0,0.5); }
 
 .card-face {
@@ -775,10 +775,10 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
   border-top: 1px solid rgba(255,255,255,0.3);
 }
 .mp-dot { position: absolute; width: 9px; height: 9px; border-radius: 50%; margin: -4.5px 0 0 -4.5px; border: 1px solid rgba(0,0,0,0.5); }
-.mp-POR { background: #ffd54a; }
+.mp-GK { background: #ffd54a; }
 .mp-DEF { background: #56a0ff; }
-.mp-MED { background: #4ade80; }
-.mp-DEL { background: #ff6b5c; }
+.mp-MID { background: #4ade80; }
+.mp-FWD { background: #ff6b5c; }
 
 .tac-group { margin-bottom: 14px; }
 .tac-group h4 { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 6px; }
