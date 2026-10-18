@@ -1,59 +1,97 @@
-# ⚽ Rogue Manager — Football Roguelike
+# Rogue Manager
 
-Prototipo web jugable de un juego de gestión de fútbol **roguelike**: mezcla de *Football Manager* y *Balatro*. Todo el contenido (equipos, jugadores, cartas, tácticas rivales) se genera proceduralmente. En español.
+A football-management roguelike for the browser: *Football Manager* depth with *Balatro*-style runs, synergies and card drafting. Every team, player, card and rival tactic is generated procedurally.
 
-## Cómo jugar
+> The in-game UI is in **Spanish**.
 
-Abre `index.html` en un navegador (o sirve la carpeta con `python3 -m http.server` y visita `http://localhost:8000`). No hay build ni dependencias: Phaser 3 se carga desde CDN, con copia local en `lib/` como fallback offline. En móvil la interfaz cambia sola a un modo táctil tipo app (forzable con `?mobile=1`).
+![Squad and lineup screen](docs/images/lineup.jpg)
 
-## El juego
+## How a run works
 
-- **Una run = una temporada** de 14 jornadas en una liga de 8 equipos ficticios.
-- **Victoria:** ser campeón de liga. **Derrota:** 3 derrotas seguidas o no ser campeón al final.
-- **Partidos jefe** en las jornadas 5, 10 y 14: rival potenciado y botín de rareza alta garantizado.
+- **One run = one season**: 14 matchdays in an 8-team league of fictional clubs (double round-robin).
+- **Win** by finishing as league champion. **Lose** after 3 straight defeats or by ending the season without the title.
+- **Boss matches** on matchdays 5, 10 and 14: a boosted rival and guaranteed high-rarity loot.
+- Between matches you set the lineup and tactics, buy and sell players, hire staff, and read the scouting report on the next rival.
 
-### Sistemas
+<table>
+  <tr>
+    <td><img src="docs/images/match.jpg" alt="Live match simulation"></td>
+    <td><img src="docs/images/tactics.jpg" alt="Formations, instructions and rival report"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/shop.jpg" alt="Transfer market with negotiation"></td>
+    <td><img src="docs/images/post.jpg" alt="Post-match stats and player ratings"></td>
+  </tr>
+</table>
 
-| Sistema | Detalle |
+## Systems
+
+| System | What it does |
 |---|---|
-| Atributos | 33 atributos estilo FM en escala 1-20, en 4 grupos (Técnica, Mental, Físico y Portería), generados por perfil de posición y rareza. Ficha completa por jugador con código de color |
-| Cartas de jugador | Posición, rareza (Común/Rara/Épica/Legendaria), edad, tag de sinergia, 0-2 habilidades pasivas (Clutch, Muro, Killer, Motor, Capitán, Velocista, Cerrojo, Francotirador, Fajador, Estrella) y estadísticas de temporada |
-| Formaciones | 7 formaciones (4-3-3, 4-4-2, 4-2-3-1, 3-5-2, 3-4-3, 5-3-2, 4-1-4-1) con roles por slot (carrilero, pivote, mediapunta, extremo…). La **cohesión** con cada formación crece jugándola |
-| Instrucciones | Mentalidad, presión, estilo de pase y amplitud. Cambio de mentalidad/presión en el descanso (pizarra) |
-| Choque táctico | Cada rival IA tiene su propia plantilla de 11 jugadores, formación y plan de partido. El informe del ojeador analiza el enfrentamiento (superioridades por zona, presión, espacios) para que lo contrarrestes |
-| Motor de partido | Simulación espacial continua en un campo de 105×68: 22 agentes con anclas de formación que basculan con el balón, pases planificados con error e intercepciones por atributos, regates, entradas, faltas, tarjetas (con expulsiones y sanciones), penaltis, córners, saques de banda/puerta, centros disputados de cabeza, paradas con rechace, fatiga en vivo y ratings por jugador. El mismo motor corre el modo visual, el skip y los partidos IA vs IA |
-| Partido visible | Phaser dibuja el estado del motor: campo con bandas de siega, balón con vuelo/sombra/estela, anillo de portador, tarjetas animadas, celebraciones, HUD con posesión/tiros/córners en vivo y x1/x2/x4/saltar |
-| Condición y forma | Jugar cansa según Resistencia; la condición baja se traduce en peor rendimiento y más lesiones. La forma sigue a las notas del jugador; la moral, a los resultados |
-| Sinergias | 4 tags con umbrales que dan bonos de atributo al equipo — el "multiplicador Balatro" |
-| Staff | 8 cartas (Ojeador, Preparador, Agente, Mecenas, Táctico, Motivador, Cazatalentos, Economista), máx. 3 |
-| Economía | Oro por victorias/objetivos/ventas (incluye bonus por actuación estelar), salarios por jornada, tienda con reroll y negociación con IA (paciencia y precio de reserva ocultos) |
-| Post-partido | Estadísticas completas (posesión, tiros, xG, pases, faltas, tarjetas, córners), notas del once con MVP, goleadores con asistencias y drop de cartas a elegir |
-| Liga | Clasificación, calendario con la formación de cada rival y pichichi. El resto de la jornada se juega con el motor real |
-| Sprites | Retratos pixel-art procedurales y deterministas por jugador (canvas, sin assets externos) |
-| UI móvil | Barra de navegación inferior tipo app, banquillo deslizable, modales bottom-sheet, controles táctiles |
-| Meta | Récord de runs/títulos en localStorage |
+| Attributes | 33 FM-style attributes on a 1–20 scale (Technical, Mental, Physical, Goalkeeping), generated from position profile and rarity |
+| Player cards | Position, rarity (Common / Rare / Epic / Legendary), age, a synergy tag and 0–2 passive abilities |
+| Formations | 7 formations with per-slot roles. Cohesion with a formation grows the more you play it |
+| Instructions | Mentality, pressing, passing style and width. Mentality and pressing can change at half-time |
+| Tactical matchup | Each AI rival has its own XI, formation and game plan. The scout report flags zone overloads and weaknesses to exploit |
+| Match engine | Continuous spatial simulation on a 105×68 pitch with 22 agents: passes and interceptions driven by attributes, dribbles, tackles, fouls, cards, set pieces, headers, rebounds, live fatigue and player ratings |
+| Visual match | Phaser renders the engine state with a live HUD and x1 / x2 / x4 / skip controls |
+| Condition and form | Playing drains condition (based on Stamina), which lowers performance and raises injury risk. Form follows ratings; morale follows results |
+| Synergies | 4 tags with thresholds that grant team-wide attribute bonuses: the "Balatro multiplier" |
+| Staff | 8 staff cards with passive effects, up to 3 at a time |
+| Economy | Gold from wins, objectives and sales; wages per matchday; a shop with rerolls; AI negotiation with hidden patience and reserve price |
+| League | Table, fixtures with each rival's formation, and top scorers. The other matches each matchday run on the same engine |
+| Portraits | Deterministic procedural pixel-art faces drawn on canvas, no image assets |
+| Sound | Synthesized with WebAudio, no audio files |
+| Meta | Run and title records saved in `localStorage` |
 
-### Estructura
+The engine is independent of rendering: `Engine.MatchEngine.step(dt)` drives the visible match, the skip button and the instant AI-vs-AI results.
 
-```
-index.html         Pantallas y layout (+ detector de móvil)
-css/style.css      UI dark estilo Balatro (tweens, glow por rareza, flip 3D)
-css/mobile.css     Capa móvil: barra inferior, bottom-sheets, targets táctiles
-js/attrs.js        33 atributos estilo FM: perfiles, medias, resúmenes
-js/formations.js   Formaciones con slots/roles, tácticas y análisis de choque
-js/sprite.js       Retratos pixel-art procedurales (canvas)
-js/gen.js          Generación procedural (cartas, plantillas IA, liga, staff)
-js/synergy.js      Sinergias/habilidades/forma/moral → atributos efectivos
-js/engine.js       Motor de partido continuo (espacial, headless o visual)
-js/state.js        Estado de run, táctica, cohesión, alineación, meta
-js/league.js       Clasificación, jornadas IA vs IA, pichichi, fin de run
-js/economy.js      Tienda, salarios, recompensas, lesiones, condición
-js/nego.js         IA de negociación
-js/ui.js           Render DOM: gestión, táctica, ficha, post-partido, liga
-js/match.js        Render Phaser del partido + HUD + pizarra del descanso
-js/mobile.js       Reestructura la UI para táctil (nav inferior, steppers)
-js/main.js         Flujo de la run
-js/audio.js        Sonido sintetizado con WebAudio (sin assets)
+## Mobile
+
+<img src="docs/images/mobile.jpg" alt="Mobile layout" width="260" align="right">
+
+On touch devices the UI switches to an app-style layout: bottom navigation bar, swipeable bench, bottom-sheet modals and larger touch targets. Force it on or off with `?mobile=1` / `?mobile=0`.
+
+<br clear="right">
+
+## Quick start
+
+No build step and no dependencies. Open `index.html` in a browser, or serve the folder:
+
+```bash
+python3 -m http.server
+# then open http://localhost:8000
 ```
 
-El motor es independiente del render: `Engine.MatchEngine.step(dt)` avanza la simulación tanto para el partido visible como para el skip y los resultados instantáneos del resto de la jornada.
+Phaser 3 loads from a CDN, with a local copy in `lib/` as an offline fallback.
+
+## Tech stack
+
+Vanilla JavaScript, HTML and CSS, with [Phaser 3](https://phaser.io/) for the match view.
+
+## Project structure
+
+```
+index.html         Screens and layout (+ mobile detection)
+css/style.css      Dark Balatro-style UI (tweens, rarity glow, 3D card flip)
+css/mobile.css     Mobile layer: bottom bar, bottom sheets, touch targets
+js/attrs.js        33 FM-style attributes: profiles, averages, summaries
+js/formations.js   Formations with slots/roles, instructions, matchup analysis
+js/sprite.js       Procedural pixel-art portraits (canvas)
+js/gen.js          Procedural generation (cards, AI squads, league, staff)
+js/synergy.js      Synergies, abilities, form and morale → effective attributes
+js/engine.js       Continuous match engine (spatial, headless or visual)
+js/state.js        Run state, tactics, cohesion, lineup, meta records
+js/league.js       Table, AI-vs-AI matchdays, top scorers, end of run
+js/economy.js      Shop, wages, rewards, injuries, condition
+js/nego.js         Negotiation AI
+js/ui.js           DOM rendering: squad, tactics, player sheet, post-match, league
+js/match.js        Phaser match renderer, HUD and half-time board
+js/mobile.js       Touch UI restructuring (bottom nav, steppers)
+js/main.js         Run flow
+js/audio.js        WebAudio sound effects
+```
+
+## Status
+
+Playable prototype.
