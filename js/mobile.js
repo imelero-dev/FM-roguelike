@@ -1,22 +1,22 @@
 /* ============================================================
-   MOBILE — adaptación táctil de la UI. Solo actúa si el
-   dispositivo es móvil (clase is-mobile puesta en <html> por
-   el detector de index.html). Reorganiza la gestión como una
-   app: barra de navegación inferior con las pestañas y el
-   botón de jugar siempre a mano del pulgar.
+   MOBILE — touch adaptation of the UI. Only runs if the
+   device is mobile (is-mobile class set on <html> by the
+   detector in index.html). Rearranges management like an
+   app: bottom nav bar with the tabs, and the play button
+   always within thumb reach.
    ============================================================ */
 
 var Mobile = (function () {
 
   var activo = !!window.IS_MOBILE;
 
-  // mueve tabs + botón JUGAR a una barra inferior fija
+  // moves tabs + PLAY button into a fixed bottom bar
   function montarBarraInferior() {
     var manage = document.getElementById('screen-manage');
     var tabs = manage.querySelector('.tabs');
     var play = document.getElementById('btn-play-match');
 
-    // icono arriba, etiqueta debajo en cada pestaña
+    // icon on top, label below on each tab
     tabs.querySelectorAll('.tab').forEach(function (t) {
       var partes = t.textContent.trim().split(' ');
       var icono = partes.shift();
@@ -34,7 +34,7 @@ var Mobile = (function () {
     manage.appendChild(barra);
   }
 
-  // botones −/+ para ajustar la oferta con precisión en táctil
+  // −/+ buttons to fine-tune the offer on touch
   function montarSteppers() {
     var slider = document.getElementById('nego-slider');
     function paso() {

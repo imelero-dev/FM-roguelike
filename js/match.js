@@ -1,9 +1,9 @@
 /* ============================================================
-   MATCH — renderizado del partido en Phaser. El motor (Engine)
-   lleva TODA la lógica: aquí solo se avanza el reloj del motor
-   según la velocidad elegida, se dibuja su estado (22 jugadores,
-   balón con vuelo y sombra, estela) y se convierten sus eventos
-   en feed, sonido y efectos. Descanso con pausa táctica.
+   MATCH — Phaser match rendering. The Engine holds ALL the
+   logic: here we only advance the engine clock at the chosen
+   speed, draw its state (22 players, ball with flight and shadow,
+   trail) and turn its events into feed, sound and effects.
+   Half-time with a tactical pause.
    ============================================================ */
 
 var Match = (function () {
@@ -29,7 +29,7 @@ var Match = (function () {
     return 'rgb(' + r + ',' + g + ',' + b + ')';
   }
 
-  // color alternativo del portero
+  // alternate goalkeeper colour
   function colorGK(color) {
     return esClaro(color) ? 0x222831 : 0xf3e04b;
   }
@@ -53,34 +53,34 @@ var Match = (function () {
     var p0 = Math.round(e.stats[0].posesion / total * 100);
     document.getElementById('ms-pos-fill').style.width = p0 + '%';
     document.getElementById('ms-pos-val').textContent = p0 + '%';
-    document.getElementById('ms-tiros').textContent = e.stats[0].tiros + ' (' + e.stats[0].aPuerta + ') · Tiros · ' + e.stats[1].tiros + ' (' + e.stats[1].aPuerta + ')';
-    document.getElementById('ms-corners').textContent = e.stats[0].corners + ' · Córners · ' + e.stats[1].corners;
+    document.getElementById('ms-tiros').textContent = e.stats[0].tiros + ' (' + e.stats[0].aPuerta + ') · Shots · ' + e.stats[1].tiros + ' (' + e.stats[1].aPuerta + ')';
+    document.getElementById('ms-corners').textContent = e.stats[0].corners + ' · Corners · ' + e.stats[1].corners;
   }
 
-  // ---------- escena ----------
+  // ---------- scene ----------
   function crearJuego(colores) {
     var sceneConfig = {
       create: function () {
         var s = this;
         current.scene = s;
 
-        // ----- campo -----
+        // ----- pitch -----
         var g = s.add.graphics();
         g.fillStyle(0x0d2416, 1);
         g.fillRect(0, 0, W, H);
-        // césped con bandas de siega
+        // grass with mowing stripes
         for (var i = 0; i < 10; i++) {
           g.fillStyle(i % 2 ? 0x1c6b35 : 0x175c2d, 1);
           g.fillRect(px(i * 10.5), py(0) - 8, 10.5 * SX, 68 * SY + 16);
         }
-        // líneas
+        // lines
         g.lineStyle(2, 0xffffff, 0.75);
         g.strokeRect(px(0), py(0), 105 * SX, 68 * SY);
         g.lineBetween(px(52.5), py(0), px(52.5), py(68));
         g.strokeCircle(px(52.5), py(34), 9.15 * SX);
         g.fillStyle(0xffffff, 0.75);
         g.fillCircle(px(52.5), py(34), 3);
-        // áreas
+        // penalty areas
         [0, 1].forEach(function (side) {
           var x0 = side === 0 ? 0 : 105;
           var dir = side === 0 ? 1 : -1;
@@ -88,23 +88,23 @@ var Match = (function () {
           g.strokeRect(Math.min(px(x0), px(x0 + dir * 16.5)), py(34 - 20.15), 16.5 * SX, 40.3 * SY);
           g.strokeRect(Math.min(px(x0), px(x0 + dir * 5.5)), py(34 - 9.16), 5.5 * SX, 18.32 * SY);
           g.fillCircle(px(x0 + dir * 11), py(34), 2.5);
-          // porterías
+          // goals
           g.lineStyle(4, 0xf0f0f0, 0.95);
           g.strokeRect(Math.min(px(x0), px(x0 - dir * 2.2)), py(34 - 3.66), 2.2 * SX, 7.32 * SY);
         });
-        // arcos de córner
+        // corner arcs
         g.lineStyle(2, 0xffffff, 0.5);
         [[0, 0], [0, 68], [105, 0], [105, 68]].forEach(function (c) {
           g.strokeCircle(px(c[0]), py(c[1]), 1.2 * SX);
         });
 
-        // textura de partícula
+        // particle texture
         var pg = s.make.graphics({ x: 0, y: 0, add: false });
         pg.fillStyle(0xffffff, 1);
         pg.fillCircle(6, 6, 6);
         pg.generateTexture('spark', 12, 12);
 
-        // ----- estela del balón -----
+        // ----- ball trail -----
         s.trail = [];
         for (var t = 0; t < 7; t++) {
           var tc = s.add.circle(0, 0, 3.2 - t * 0.35, 0xffffff, 0.16 - t * 0.02);
@@ -113,7 +113,7 @@ var Match = (function () {
         }
         s.trailHist = [];
 
-        // ----- jugadores -----
+        // ----- players -----
         s.sprites = [[], []];
         current.engine.players.forEach(function (arr, team) {
           arr.forEach(function (p, i) {
@@ -128,12 +128,12 @@ var Match = (function () {
           });
         });
 
-        // anillo del portador
+        // ball carrier ring
         s.ring = s.add.circle(0, 0, 13, 0x000000, 0);
         s.ring.setStrokeStyle(2, 0xffe14d, 0.85);
         s.ring.setVisible(false);
 
-        // balón + sombra
+        // ball + shadow
         s.ballShadow = s.add.ellipse(px(52.5), py(34) + 4, 9, 3.5, 0x000000, 0.3);
         s.ball = s.add.circle(px(52.5), py(34), 4.5, 0xffffff);
         s.ball.setStrokeStyle(1.5, 0x222222, 0.9);
@@ -147,7 +147,7 @@ var Match = (function () {
         if (!current || !s.sprites) return;
         var e = current.engine;
 
-        // avanzar el motor según velocidad (pasos fijos de 50 ms)
+        // advance the engine by speed (fixed 50 ms steps)
         if (!current.enDescanso) {
           var avance = Math.min(deltaMs / 1000, 0.1) * current.speed;
           current.acc = (current.acc || 0) + avance;
@@ -161,14 +161,14 @@ var Match = (function () {
           if (e.terminado && !current.finalizando) finalizar(1400);
         }
 
-        // dibujar estado
+        // draw state
         e.players.forEach(function (arr, team) {
           arr.forEach(function (p, i) {
             var sp = s.sprites[team][i];
             sp.c.x = px(p.x); sp.c.y = py(p.y);
             sp.num.x = sp.c.x; sp.num.y = sp.c.y;
             if (p.off && sp.c.alpha > 0.2) { sp.c.setAlpha(0.15); sp.num.setAlpha(0.15); }
-            // cansancio visible: pierde saturación con la reserva baja
+            // visible fatigue: fades as stamina drops
             else if (!p.off) {
               var st = p.stamina / 100;
               sp.c.setAlpha(0.75 + st * 0.25);
@@ -186,7 +186,7 @@ var Match = (function () {
         s.ballShadow.setScale(1 + b.z * 0.04);
         s.ballShadow.setAlpha(0.3 - b.z * 0.02);
 
-        // estela
+        // trail
         s.trailTimer += deltaMs;
         if (s.trailTimer > 28) {
           s.trailTimer = 0;
@@ -200,7 +200,7 @@ var Match = (function () {
           else tc.setVisible(false);
         });
 
-        // anillo del portador
+        // ball carrier ring
         if (b.owner) {
           var cp = e.players[b.owner.team][b.owner.i];
           s.ring.setVisible(true);
@@ -219,11 +219,13 @@ var Match = (function () {
       parent: 'phaser-container',
       width: W, height: H,
       scene: sceneConfig,
-      banner: false
+      banner: false,
+      // sound goes through AudioFX: avoids a second Phaser AudioContext
+      audio: { noAudio: true }
     });
   }
 
-  // ---------- efectos ----------
+  // ---------- effects ----------
   function glowJugador(team, cardId) {
     var s = current && current.scene;
     if (!s) return;
@@ -257,7 +259,7 @@ var Match = (function () {
       tint: current.colores[team]
     });
     part.explode(30);
-    var txt = s.add.text(W / 2, H / 2 - 30, '¡GOOOL!', {
+    var txt = s.add.text(W / 2, H / 2 - 30, 'GOAL!', {
       fontFamily: 'Arial Black, sans-serif', fontSize: '64px', color: '#ffe14d',
       stroke: '#000', strokeThickness: 8
     }).setOrigin(0.5).setScale(0.2);
@@ -297,21 +299,21 @@ var Match = (function () {
     });
   }
 
-  // ---------- eventos del motor ----------
+  // ---------- engine events ----------
   function procesarEventos(eventos, visual) {
     if (!current) return;
     var homeName = current.nombres[0], awayName = current.nombres[1];
     eventos.forEach(function (ev) {
       var mio = ev.team === 0;
-      var quien = mio ? '' : ' (rival)';
+      var quien = mio ? '' : ' (opp.)';
       switch (ev.t) {
         case 'inicio':
-          feedLine('🏁 ¡Comienza el partido!');
+          feedLine('🏁 Kick-off!');
           if (visual) AudioFX.silbato();
           break;
         case 'gol':
-          feedLine(ev.min + "' ⚽ <b>¡GOL de " + ev.jugador + "!</b>" +
-            (ev.asistente ? ' <span class="feed-asist">(asist. ' + ev.asistente + ')</span>' : '') +
+          feedLine(ev.min + "' ⚽ <b>GOAL! " + ev.jugador + "</b>" +
+            (ev.asistente ? ' <span class="feed-asist">(assist: ' + ev.asistente + ')</span>' : '') +
             ' (' + ev.marcador[0] + '-' + ev.marcador[1] + ')', mio ? 'feed-gol' : 'feed-gol-rival');
           if (visual) {
             fxGol(ev.team, ev.jugador);
@@ -323,47 +325,47 @@ var Match = (function () {
           break;
         case 'tiro':
           if (ev.resultado === 'parada') {
-            feedLine(ev.min + "' 🧤 ¡" + (ev.portero || 'El portero') + ' detiene el disparo de ' + ev.jugador + '!');
+            feedLine(ev.min + "' 🧤 " + (ev.portero || 'The keeper') + ' saves from ' + ev.jugador + '!');
             if (visual) AudioFX.parada();
           } else if (ev.resultado === 'palo') {
-            feedLine(ev.min + "' 🥅 ¡" + ev.jugador + ' estrella el balón en el palo!', mio ? 'feed-mia' : 'feed-rival');
+            feedLine(ev.min + "' 🥅 " + ev.jugador + ' hits the post!', mio ? 'feed-mia' : 'feed-rival');
             if (visual) AudioFX.parada();
           } else if (ev.resultado === 'atrapa') {
-            feedLine(ev.min + "' 🧤 " + ev.jugador + ' atrapa el centro por alto');
+            feedLine(ev.min + "' 🧤 " + ev.jugador + ' claims the cross');
           } else {
-            feedLine(ev.min + "' 💨 " + ev.jugador + ' la manda fuera' + quien, mio ? 'feed-mia' : 'feed-rival');
+            feedLine(ev.min + "' 💨 " + ev.jugador + ' fires wide' + quien, mio ? 'feed-mia' : 'feed-rival');
           }
           break;
         case 'falta':
-          feedLine(ev.min + "' ⚠️ Falta de " + ev.jugador + ' sobre ' + ev.sobre);
+          feedLine(ev.min + "' ⚠️ Foul by " + ev.jugador + ' on ' + ev.sobre);
           if (visual) AudioFX.silbato();
           break;
         case 'amarilla':
-          feedLine(ev.min + "' 🟨 Amarilla para " + ev.jugador + quien);
+          feedLine(ev.min + "' 🟨 Yellow card for " + ev.jugador + quien);
           if (visual) { fxTarjeta(ev.team, ev.cardId, false); AudioFX.error(); }
           break;
         case 'roja':
-          feedLine(ev.min + "' 🟥 <b>¡EXPULSADO " + ev.jugador + '!</b>' + (ev.doble ? ' (doble amarilla)' : ''), 'feed-gol-rival');
+          feedLine(ev.min + "' 🟥 <b>RED CARD! " + ev.jugador + ' is sent off</b>' + (ev.doble ? ' (second yellow)' : ''), 'feed-gol-rival');
           if (visual) { fxTarjeta(ev.team, ev.cardId, true); AudioFX.derrota(); }
           break;
         case 'penalti':
-          feedLine(ev.min + "' 🎯 <b>¡PENALTI a favor de " + (mio ? homeName : awayName) + '! Lo lanza ' + ev.jugador + '</b>', mio ? 'feed-gol' : 'feed-gol-rival');
+          feedLine(ev.min + "' 🎯 <b>PENALTY to " + (mio ? homeName : awayName) + '! ' + ev.jugador + ' steps up</b>', mio ? 'feed-gol' : 'feed-gol-rival');
           if (visual) AudioFX.ocasion();
           break;
         case 'corner':
-          feedLine(ev.min + "' 🚩 Córner para " + (mio ? homeName : awayName));
+          feedLine(ev.min + "' 🚩 Corner to " + (mio ? homeName : awayName));
           break;
         case 'descanso':
-          feedLine("🥤 Descanso. <b>" + ev.marcador[0] + ' - ' + ev.marcador[1] + '</b>');
+          feedLine("🥤 Half-time. <b>" + ev.marcador[0] + ' - ' + ev.marcador[1] + '</b>');
           if (visual) { AudioFX.silbato(); mostrarDescanso(); }
           break;
         case 'habilidad':
           var hab = Gen.HABILIDADES[ev.hab];
-          feedLine(ev.min + "' ✨ <b>" + (hab ? hab.nombre : ev.hab) + '</b> de ' + ev.jugador + ' se activa', 'feed-hab');
+          feedLine(ev.min + "' ✨ <b>" + (hab ? hab.nombre : ev.hab) + '</b> activated by ' + ev.jugador, 'feed-hab');
           if (visual && mio) { AudioFX.habilidad(); glowJugador(ev.team, ev.cardId); }
           break;
         case 'final':
-          feedLine('🏁 Final del partido. <b>' + ev.marcador[0] + ' - ' + ev.marcador[1] + '</b>');
+          feedLine('🏁 Full-time. <b>' + ev.marcador[0] + ' - ' + ev.marcador[1] + '</b>');
           if (visual) AudioFX.silbato();
           break;
       }
@@ -371,7 +373,7 @@ var Match = (function () {
     if (!visual) updateHUD();
   }
 
-  // ---------- descanso con pizarra ----------
+  // ---------- half-time team talk ----------
   function mostrarDescanso() {
     if (!current) return;
     current.enDescanso = true;
@@ -380,12 +382,12 @@ var Match = (function () {
     var total = e.stats[0].posesion + e.stats[1].posesion || 1;
     document.getElementById('ht-marcador').textContent = e.marcador[0] + ' - ' + e.marcador[1];
     document.getElementById('ht-stats').innerHTML =
-      '<div class="ht-row"><span>' + Math.round(e.stats[0].posesion / total * 100) + '%</span><b>Posesión</b><span>' + Math.round(e.stats[1].posesion / total * 100) + '%</span></div>' +
-      '<div class="ht-row"><span>' + e.stats[0].tiros + ' (' + e.stats[0].aPuerta + ')</span><b>Tiros (a puerta)</b><span>' + e.stats[1].tiros + ' (' + e.stats[1].aPuerta + ')</span></div>' +
+      '<div class="ht-row"><span>' + Math.round(e.stats[0].posesion / total * 100) + '%</span><b>Possession</b><span>' + Math.round(e.stats[1].posesion / total * 100) + '%</span></div>' +
+      '<div class="ht-row"><span>' + e.stats[0].tiros + ' (' + e.stats[0].aPuerta + ')</span><b>Shots (on target)</b><span>' + e.stats[1].tiros + ' (' + e.stats[1].aPuerta + ')</span></div>' +
       '<div class="ht-row"><span>' + e.stats[0].xg.toFixed(2) + '</span><b>xG</b><span>' + e.stats[1].xg.toFixed(2) + '</span></div>' +
-      '<div class="ht-row"><span>' + e.stats[0].faltas + '</span><b>Faltas</b><span>' + e.stats[1].faltas + '</span></div>';
+      '<div class="ht-row"><span>' + e.stats[0].faltas + '</span><b>Fouls</b><span>' + e.stats[1].faltas + '</span></div>';
 
-    // pizarra: cambiar mentalidad y presión al descanso
+    // tactics board: change mentality and pressing at half-time
     var tac = e.teams[0].tactica;
     function pintarSeg(contId, opciones, actual, aplicar) {
       var cont = document.getElementById(contId);
@@ -409,12 +411,13 @@ var Match = (function () {
     document.getElementById('ht-continue').onclick = function () {
       AudioFX.click();
       panel.classList.add('hidden');
+      if (!current) return; // the match already ended (e.g. skipped)
       current.enDescanso = false;
       current.engine.reanudar();
     };
   }
 
-  // ---------- fin / skip ----------
+  // ---------- end / skip ----------
   function finalizar(delay) {
     if (!current || current.finalizando) return;
     current.finalizando = true;
@@ -489,7 +492,7 @@ var Match = (function () {
     if (window.Phaser) {
       current.game = crearJuego(opts.colores);
     } else {
-      feedLine('⚠️ No se pudo cargar Phaser. Ejecutando en modo texto…');
+      feedLine('⚠️ Could not load Phaser. Running in text mode…');
       setTimeout(skip, 600);
     }
   }

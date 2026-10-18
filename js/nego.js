@@ -1,23 +1,23 @@
 /* ============================================================
-   NEGO — minijuego de negociación (compra/venta) contra IA
-   con paciencia y precio de reserva ocultos.
+   NEGO — negotiation minigame (buying/selling) against the AI
+   with hidden patience and reserve price.
    ============================================================ */
 
 var Nego = (function () {
 
-  // sesión de negociación activa
+  // active negotiation session
   var sesion = null;
 
-  // modo: 'compra' (regateas hacia abajo) o 'venta' (regateas hacia arriba)
+  // mode: 'compra' (buying, haggle down) or 'venta' (selling, haggle up)
   function iniciar(modo, carta, precioBase) {
     var reserva, paciencia;
     if (modo === 'compra') {
-      // el vendedor no acepta por debajo de su reserva
-      reserva = Math.round(precioBase * (0.82 + RNG.f() * 0.16));   // 82%-98% del precio
+      // the seller won't accept below their reserve
+      reserva = Math.round(precioBase * (0.82 + RNG.f() * 0.16));   // 82%-98% of the price
       paciencia = RNG.int(2, 3);
     } else {
-      // el comprador no paga por encima de su tope
-      reserva = Math.round(precioBase * (1.02 + RNG.f() * 0.35));   // 102%-137% del valor de venta
+      // the buyer won't pay above their ceiling
+      reserva = Math.round(precioBase * (1.02 + RNG.f() * 0.35));   // 102%-137% of the sale value
       paciencia = RNG.int(2, 3);
     }
     sesion = {
@@ -36,7 +36,7 @@ var Nego = (function () {
     return sesion;
   }
 
-  // Presenta una oferta. Devuelve {estado: 'aceptada'|'contraoferta'|'rota', contraoferta?}
+  // Makes an offer. Returns {estado: 'aceptada'|'contraoferta'|'ultimatum'|'rota', contraoferta?}
   function ofertar(cantidad) {
     if (!sesion || sesion.cerrada) return { estado: 'rota' };
     sesion.ronda++;
@@ -44,7 +44,7 @@ var Nego = (function () {
     var m = sesion.modo;
 
     var acepta = m === 'compra' ? cantidad >= sesion.reserva : cantidad <= sesion.reserva;
-    // ofertas muy cercanas a la reserva pueden colar con suerte
+    // offers very close to the reserve may sneak through with luck
     if (!acepta) {
       var margen = Math.abs(cantidad - sesion.reserva) / sesion.reserva;
       if (margen < 0.06 && RNG.chance(0.5)) acepta = true;
@@ -56,7 +56,7 @@ var Nego = (function () {
     }
 
     if (sesion.ronda >= sesion.maxRondas) {
-      // última bala: la IA lanza su ultimátum en vez de romper, si la oferta no fue insultante
+      // last chance: the AI issues an ultimatum instead of walking away, unless the offer was insulting
       var insulto = m === 'compra' ? cantidad < sesion.reserva * 0.6 : cantidad > sesion.reserva * 1.6;
       if (insulto) {
         sesion.cerrada = true;
@@ -66,7 +66,7 @@ var Nego = (function () {
       return { estado: 'ultimatum', contraoferta: sesion.reserva };
     }
 
-    // contraoferta: se mueve desde su posición hacia la tuya, sin cruzar la reserva
+    // counter-offer: moves from their position towards yours, never crossing the reserve
     var contra;
     if (m === 'compra') {
       var pedidoInicial = Math.round(sesion.precioBase * 1.15);

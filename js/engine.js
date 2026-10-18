@@ -1,32 +1,32 @@
 /* ============================================================
-   ENGINE — motor de partido continuo y espacial.
-   Campo de 105×68 unidades. 22 agentes con ancla de formación
-   que se desplaza con el balón, la posesión, la mentalidad y
-   la amplitud. El balón es una entidad física: los pases se
-   planifican (receptor, error por atributos, intercepciones),
-   los tiros se resuelven contra el portero, hay regates,
-   entradas, faltas, tarjetas, penaltis, córners, saques de
-   banda/puerta, remates de cabeza a los centros, fatiga,
-   ratings por jugador y xG.
+   ENGINE — continuous, spatial match engine.
+   Pitch of 105×68 units. 22 agents with a formation anchor
+   that shifts with the ball, possession, mentality and
+   width. The ball is a physical entity: passes are planned
+   (receiver, attribute-based error, interceptions), shots
+   are resolved against the keeper, and there are dribbles,
+   tackles, fouls, cards, penalties, corners, throw-ins/goal
+   kicks, headers from crosses, fatigue, per-player ratings
+   and xG.
 
-   El tiempo del motor son "segundos de visualización": un
-   partido dura 94 s a velocidad x1 (2 partes de 47 s = 90').
-   El mismo step(dt) sirve para el render en Phaser y para la
-   simulación headless (skip y partidos IA vs IA).
+   Engine time is "display seconds": a match lasts 94 s at
+   x1 speed (2 halves of 47 s = 90').
+   The same step(dt) drives both the Phaser render and the
+   headless simulation (skip and AI vs AI matches).
    ============================================================ */
 
 var Engine = (function () {
 
   var CAMPO = { w: 105, h: 68 };
-  var MEDIA_PARTE = 47;      // segundos de visualización por parte
-  var GOL_Y = 3.66;          // semiancho de la portería
-  var AREA_X = 16.5, AREA_Y = 20.15; // caja: x<16.5, |y-34|<20.15
+  var MEDIA_PARTE = 47;      // display seconds per half
+  var GOL_Y = 3.66;          // goal half-width
+  var AREA_X = 16.5, AREA_Y = 20.15; // box: x<16.5, |y-34|<20.15
 
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
   function dist(ax, ay, bx, by) { var dx = ax - bx, dy = ay - by; return Math.sqrt(dx * dx + dy * dy); }
   function gauss() { return (Math.random() + Math.random() + Math.random()) / 1.5 - 1; }
 
-  // coordenadas locales de ataque: ax = profundidad hacia la portería rival
+  // local attacking coords: ax = depth towards the opposition goal
   function axOf(team, x) { return team === 0 ? x : CAMPO.w - x; }
   function fxOf(team, ax) { return team === 0 ? ax : CAMPO.w - ax; }
   function ayOf(team, y) { return team === 0 ? y : CAMPO.h - y; }
@@ -36,10 +36,10 @@ var Engine = (function () {
   var KX_ROL = { GK: 0.03, CB: 0.26, FB: 0.30, WB: 0.34, DM: 0.30, CM: 0.34, WM: 0.36, AM: 0.38, W: 0.40, ST: 0.42 };
   var KY_ROL = { GK: 0.10, CB: 0.22, FB: 0.26, WB: 0.30, DM: 0.30, CM: 0.32, WM: 0.30, AM: 0.32, W: 0.24, ST: 0.22 };
 
-  // ---------- construcción de contextos de equipo ----------
+  // ---------- building team contexts ----------
 
-  // Once del jugador → equipo del motor.
-  // lineup: 11 cartas alineadas en el ORDEN de los slots de la formación.
+  // Player's starting XI → engine team.
+  // lineup: 11 cards in the ORDER of the formation's slots.
   function contextoJugador(lineup, staff, opts) {
     opts = opts || {};
     var tactica = opts.tactica || Formations.tacticaBase();
@@ -62,7 +62,7 @@ var Engine = (function () {
       };
     });
     return {
-      nombre: opts.nombre || 'Tu equipo',
+      nombre: opts.nombre || 'Your team',
       esIA: false,
       tactica: tactica,
       cohesion: opts.cohesion === undefined ? 60 : opts.cohesion,
@@ -72,7 +72,7 @@ var Engine = (function () {
     };
   }
 
-  // Equipo IA → equipo del motor (usa su plantilla generada por formación)
+  // AI team → engine team (uses its squad generated per formation)
   function contextoIA(equipo, esJefe) {
     var crecimiento = (equipo.rating - (equipo.ratingBase || equipo.rating)) * 0.18;
     var extra = crecimiento + (esJefe ? 1.2 : 0);
@@ -99,7 +99,7 @@ var Engine = (function () {
     };
   }
 
-  // ============ MOTOR ============
+  // ============ ENGINE ============
 
   function MatchEngine(home, away, opts) {
     this.opts = opts || {};
@@ -114,7 +114,7 @@ var Engine = (function () {
     this.fase = null;
     this.taskTimer = 0;
     this.clutchAvisado = false;
-    this.pausado = false; // descanso en modo visual
+    this.pausado = false; // half-time pause in visual mode
 
     var vent = Formations.ventajas(home.tactica.formacion, away.tactica.formacion);
     this.mod = [
@@ -150,12 +150,12 @@ var Engine = (function () {
     });
 
     this.ball = { x: 52.5, y: 34, z: 0, vx: 0, vy: 0, plan: null, owner: null, lastTouch: 0 };
-    this.lastPass = [null, null]; // {i, t} para asistencias
+    this.lastPass = [null, null]; // {i, t} for assists
 
     this.saqueInicial = Math.random() < 0.5 ? 0 : 1;
     this._kickoff(this.saqueInicial, true);
 
-    // casts visuales al pitido inicial
+    // visual skill casts at kick-off
     this.teams.forEach(function (T, team) {
       (T.castList || []).forEach(function (c) {
         self._ev('habilidad', { team: team, jugador: c.card.nombre, cardId: c.card.id, hab: c.hab });
@@ -180,13 +180,13 @@ var Engine = (function () {
     return e;
   };
 
-  // atributo con clutch dinámico
+  // attribute with dynamic clutch bonus
   MatchEngine.prototype.A = function (p, attr) {
     var v = p.a[attr];
     if (p.habs.clutch && this.minuto >= 75) v += 2;
     return v;
   };
-  MatchEngine.prototype.sf = function (p) { // factor de habilidad por cansancio/condición
+  MatchEngine.prototype.sf = function (p) { // skill factor from fatigue/condition
     return (0.86 + 0.14 * p.stamina / 100) * (0.88 + 0.12 * p.condF);
   };
   MatchEngine.prototype.vmax = function (p) {
@@ -224,7 +224,7 @@ var Engine = (function () {
     return best;
   };
 
-  // línea del último defensor rival en MI eje de ataque
+  // opposition's last-defender line on MY attacking axis
   MatchEngine.prototype.lineaDefRival = function (team) {
     var max = 55;
     this.players[1 - team].forEach(function (p) {
@@ -235,7 +235,7 @@ var Engine = (function () {
     return max;
   };
 
-  // ---------- fases / saques ----------
+  // ---------- phases / restarts ----------
 
   MatchEngine.prototype._kickoff = function (team, inicial) {
     var taker = this.masCercano(team, 52.5, 34, function (p) { return p.rol !== 'GK'; });
@@ -301,7 +301,7 @@ var Engine = (function () {
       var axFalta = axOf(f.team, f.x);
       var dGol = dist(f.x, f.y, fxOf(f.team, 105), 34);
       if (dGol < 26 && Math.random() < 0.6) {
-        // falta directa: el mejor lanzador
+        // direct free kick: best taker
         var best = null, bv = -1, self = this;
         this.players[f.team].forEach(function (p) {
           if (p.off || p.rol === 'GK') return;
@@ -320,7 +320,7 @@ var Engine = (function () {
         var libre = this.masCercano(f.team, taker.x, taker.y, function (p) { return p !== taker; });
         if (libre) this._pase(taker, libre, {});
       }
-    } else { // banda
+    } else { // throw-in
       var cerca = this.masCercano(f.team, taker.x, taker.y, function (p) { return p !== taker; });
       if (cerca) this._pase(taker, cerca, {});
     }
@@ -354,13 +354,13 @@ var Engine = (function () {
     this._lanzarTiro(p, resultado, 0.78, false);
   };
 
-  // ---------- pases / centros / despejes ----------
+  // ---------- passes / crosses / clearances ----------
 
   MatchEngine.prototype._pase = function (p, receptor, opts) {
     opts = opts || {};
     var b = this.ball;
     var presion = this.presionSobre(p);
-    // punto de destino: posición prevista del receptor
+    // target point: receiver's predicted position
     var tx = receptor.x + receptor.vx * 0.5;
     var ty = receptor.y + receptor.vy * 0.5;
     if (receptor.task && receptor.task.tipo === 'desmarque') {
@@ -368,7 +368,7 @@ var Engine = (function () {
       ty = receptor.y + (receptor.task.ty - receptor.y) * 0.55;
     }
     var d = dist(p.x, p.y, tx, ty);
-    // error por atributos y presión
+    // error from attributes and pressure
     var sd = clamp(0.15 - this.A(p, 'pase') * 0.0055 - this.A(p, 'tecnica') * 0.0015 + presion * 0.075, 0.015, 0.24);
     var ang = Math.atan2(ty - p.y, tx - p.x) + gauss() * sd;
     d *= 1 + gauss() * clamp(0.11 - this.A(p, 'pase') * 0.003, 0.02, 0.1);
@@ -398,7 +398,7 @@ var Engine = (function () {
   };
 
   MatchEngine.prototype._centro = function (p, esSaque) {
-    // balón colgado al área: se disputa de cabeza al caer
+    // ball lofted into the box: contested in the air as it drops
     var team = p.team;
     var goalX = fxOf(team, 105);
     var tx = fxOf(team, 96 - Math.random() * 6);
@@ -439,7 +439,7 @@ var Engine = (function () {
   };
 
   MatchEngine.prototype._planificarIntercepcion = function (plan) {
-    // muestrea la línea de pase: el primer rival que llega, corta
+    // sample the passing lane: first opponent to get there intercepts
     var self = this;
     var pasos = Math.max(3, Math.floor(plan.d / 3));
     var dx = (plan.destX - plan.origenX) / pasos;
@@ -464,7 +464,7 @@ var Engine = (function () {
     }
   };
 
-  // ---------- tiros ----------
+  // ---------- shots ----------
 
   MatchEngine.prototype._xg = function (p, x, y, cabeza) {
     var team = p.team;
@@ -537,7 +537,7 @@ var Engine = (function () {
       team: team, pasadorI: p.i, tirador: p
     };
     b.lastTouch = team;
-    // el portero se lanza
+    // keeper dives
     var gk = this.players[1 - team][0];
     gk.task = { tipo: 'estirada', tx: goalX + (team === 0 ? -1.2 : 1.2), ty: clamp(ty, 34 - GOL_Y - 1, 34 + GOL_Y + 1) };
     this._ev('tiro_va', { team: team, jugador: p.nombre });
@@ -577,11 +577,11 @@ var Engine = (function () {
         b.owner = { team: gk.team, i: gk.i };
         b.x = gk.x; b.y = gk.y; b.z = 0;
       } else if (Math.random() < 0.35) {
-        // la manda a córner
+        // tipped behind for a corner
         var cy = plan.destY < 34 ? 0.8 : CAMPO.h - 0.8;
         this._saque('corner', team, plan.destX < 52.5 ? 0.8 : CAMPO.w - 0.8, cy);
       } else {
-        // rechace: balón suelto en el área
+        // parried: loose ball in the box
         b.x = gk.x + (team === 0 ? -1 : 1) * (2 + Math.random() * 5);
         b.y = gk.y + (Math.random() * 2 - 1) * 8;
         b.vx = (team === 0 ? -1 : 1) * (4 + Math.random() * 7);
@@ -602,7 +602,7 @@ var Engine = (function () {
     }
   };
 
-  // llegada de un balón colgado (centro/córner/despeje largo): duelo aéreo
+  // lofted ball arriving (cross/corner/long clearance): aerial duel
   MatchEngine.prototype._resolverLlegadaAerea = function () {
     var b = this.ball;
     var plan = b.plan;
@@ -613,7 +613,7 @@ var Engine = (function () {
     var team = plan.team;
     var esCentro = plan.tipo === 'centro';
 
-    // candidatos al duelo: los más cercanos de cada equipo
+    // duel candidates: the closest from each team
     function mejor(t, esDef) {
       var best = null, bv = -1;
       self.players[t].forEach(function (p) {
@@ -629,7 +629,7 @@ var Engine = (function () {
     var atacante = mejor(team, false);
     var defensor = mejor(1 - team, true);
 
-    // el portero puede salir a por el balón colgado
+    // keeper may come out to claim the high ball
     var gk = this.players[1 - team][0];
     var dGk = dist(gk.x, gk.y, b.x, b.y);
     if (esCentro && dGk < 6.5 && Math.random() < clamp(this.A(gk, 'juegoAereo') * 0.042 - dGk * 0.03, 0.05, 0.6)) {
@@ -641,14 +641,14 @@ var Engine = (function () {
     }
 
     if (esCentro && atacante.p && atacante.v > defensor.v + (plan.calidad !== undefined ? clamp(8 - plan.calidad * 0.45, 0, 5) : 3)) {
-      // remate de cabeza
+      // header on goal
       atacante.p.x = b.x; atacante.p.y = b.y;
       b.owner = { team: team, i: atacante.p.i };
       this._tiro(atacante.p, { cabeza: true });
       return;
     }
     if (defensor.p && (!atacante.p || defensor.v >= atacante.v)) {
-      // despeje defensivo; a veces la manda a córner
+      // defensive clearance; sometimes conceded as a corner
       defensor.p.nota += 0.08;
       var axDef = axOf(team, defensor.p.x);
       if (esCentro && axDef > 88 && Math.random() < 0.22) {
@@ -661,17 +661,17 @@ var Engine = (function () {
       return;
     }
     if (atacante.p) {
-      // la baja y controla
+      // brings it down and controls
       b.owner = { team: team, i: atacante.p.i };
       b.x = atacante.p.x; b.y = atacante.p.y;
       return;
     }
-    // nadie: balón suelto
+    // nobody: loose ball
     b.vx = (Math.random() * 2 - 1) * 6;
     b.vy = (Math.random() * 2 - 1) * 6;
   };
 
-  // ---------- decisiones del portador ----------
+  // ---------- ball-carrier decisions ----------
 
   MatchEngine.prototype._decidir = function (p) {
     var self = this;
@@ -691,7 +691,7 @@ var Engine = (function () {
       if (u > mejor.u) { mejor = { u: u, accion: accion }; }
     }
 
-    // 1) tiro
+    // 1) shot
     if (dGol < 33) {
       var xg0 = this._xg(p, p.x, p.y, false);
       var q = xg0 * (0.5 + this.A(p, 'remate') * 0.033) * (1 - presion * 0.2);
@@ -702,7 +702,7 @@ var Engine = (function () {
       considerar(u, function () { self._tiro(p, {}); });
     }
 
-    // 2) pases
+    // 2) passes
     var enCentro = Math.abs(p.y - 34) < 15 && ax > 30 && ax < 75;
     var zonaModC = 1 + this.mod[team].centro * 0.045;
     this.players[team].forEach(function (r) {
@@ -721,8 +721,8 @@ var Engine = (function () {
       var enAreaR = axOf(team, r.x) > CAMPO.w - AREA_X && Math.abs(r.y - 34) < AREA_Y;
       var valor = 0.34 * progreso + 0.30 * espacio + (enAreaR ? 0.16 : 0) + self.A(r, 'desmarque') * 0.004;
       if (progreso < 0) valor *= 0.5;
-      valor += 0.22; // valor base de conservar con sentido
-      // riesgo estimado por rivales cerca de la línea de pase
+      valor += 0.22; // base value of sensible retention
+      // estimated risk from opponents near the passing lane
       var riesgo = 0;
       self.players[1 - team].forEach(function (o) {
         if (o.off || o.rol === 'GK') return;
@@ -742,7 +742,7 @@ var Engine = (function () {
       considerar(u, function () { self._pase(p, r, { lofted: d > 34 }); });
     });
 
-    // 3) centro al área
+    // 3) cross into the box
     var esBanda = p.y < 16 || p.y > 52;
     if (esBanda && ax > 62) {
       var enArea = 0, defEnArea = 0;
@@ -756,7 +756,7 @@ var Engine = (function () {
       considerar(uC, function () { self._centro(p, false); });
     }
 
-    // 4) regate / conducción
+    // 4) dribble / carry
     var dir = team === 0 ? 1 : -1;
     var espacioDelante = 99;
     this.players[1 - team].forEach(function (o) {
@@ -774,7 +774,7 @@ var Engine = (function () {
       p.task = { tipo: 'conducir', tx: clamp(p.x + dir * (7 + Math.random() * 5), 2, 103), ty: clamp(ty, 3, 65), timer: 0.9 };
     });
 
-    // 5) despeje de urgencia
+    // 5) emergency clearance
     if (ax < 25 && presion > 0.5) {
       considerar(0.30 + presion * 0.35 - this.A(p, 'compostura') * 0.012, function () {
         self._despeje(p, 45 + Math.random() * 25);
@@ -784,7 +784,7 @@ var Engine = (function () {
     if (mejor.accion) mejor.accion();
   };
 
-  // ---------- tareas (presión, marcaje, desmarques, apoyos) ----------
+  // ---------- tasks (pressing, marking, runs, support) ----------
 
   MatchEngine.prototype._asignarTareas = function () {
     var self = this;
@@ -799,7 +799,7 @@ var Engine = (function () {
 
       arr.forEach(function (p) {
         if (p.off || p.rol === 'GK') return;
-        // caducar tareas temporales
+        // expire temporary tasks
         if (p.task && (p.task.tipo === 'presionar' || p.task.tipo === 'cubrir' || p.task.tipo === 'apoyo')) p.task = null;
         if (p.task && p.task.tipo === 'desmarque' && (p.task.timer -= 0.15) <= 0) p.task = null;
         if (p.task && p.task.tipo === 'conducir' && (p.task.timer -= 0.15) <= 0) p.task = null;
@@ -810,10 +810,10 @@ var Engine = (function () {
       });
 
       if (defensa && carrier) {
-        // presión: solo el más cercano (dos con presión alta)
+        // pressing: only the closest (two with high press)
         var presTrig = [11, 17, 26][T.tactica.presion];
         var axCarrier = axOf(team, carrier.x);
-        if (axCarrier < 38) presTrig = Math.max(presTrig, 22); // cerca de nuestra área siempre se achica
+        if (axCarrier < 38) presTrig = Math.max(presTrig, 22); // near our box we always close down
         var cand = arr.filter(function (p) { return !p.off && p.rol !== 'GK' && p.stunned <= 0; })
           .sort(function (a, bb) { return dist(a.x, a.y, carrier.x, carrier.y) - dist(bb.x, bb.y, carrier.x, carrier.y); });
         if (cand[0] && dist(cand[0].x, cand[0].y, carrier.x, carrier.y) < presTrig) {
@@ -827,7 +827,7 @@ var Engine = (function () {
       }
 
       if (!defensa && carrier && carrier.team === team) {
-        // desmarques: atacantes sin balón buscan el hueco a la espalda
+        // runs: attackers off the ball look for space in behind
         var linea = self.lineaDefRival(team);
         arr.forEach(function (p) {
           if (p.off || p === carrier || p.task) return;
@@ -837,7 +837,7 @@ var Engine = (function () {
           var pRun = 0.10 + self.A(p, 'desmarque') * 0.012;
           if (axOf(team, carrier.x) < 40) pRun *= 0.4;
           if (Math.random() < pRun) {
-            // hueco: y con menos defensores rivales
+            // gap: y with fewest opposition defenders
             var oppDef = self.players[1 - team].filter(function (o) { return !o.off && o.pos === 'DEF'; });
             var ys = oppDef.map(function (o) { return o.y; }).sort(function (a, b2) { return a - b2; });
             ys.unshift(8); ys.push(60);
@@ -854,7 +854,7 @@ var Engine = (function () {
             p.runCd = 3 + Math.random() * 4;
           }
         });
-        // apoyos: los 2 más cercanos ofrecen línea de pase
+        // support: the 2 closest offer a passing option
         var cercanos = arr.filter(function (p) { return !p.off && p !== carrier && !p.task && p.rol !== 'GK'; })
           .sort(function (a, bb) { return dist(a.x, a.y, carrier.x, carrier.y) - dist(bb.x, bb.y, carrier.x, carrier.y); })
           .slice(0, 2);
@@ -865,7 +865,7 @@ var Engine = (function () {
         });
       }
 
-      // balón suelto: el más cercano de cada equipo lo persigue
+      // loose ball: the closest from each team chases it
       if (!b.owner && !b.plan) {
         var chaser = self.masCercano(team, b.x, b.y, function (p) { return !p.off && p.stunned <= 0; });
         if (chaser) chaser.task = { tipo: 'perseguir', tx: b.x + b.vx * 0.25, ty: b.y + b.vy * 0.25 };
@@ -873,7 +873,7 @@ var Engine = (function () {
     }
   };
 
-  // ---------- ancla de formación ----------
+  // ---------- formation anchor ----------
 
   MatchEngine.prototype._ancla = function (p) {
     var team = p.team;
@@ -891,11 +891,11 @@ var Engine = (function () {
     if (p.rol !== 'GK') ax += poss ? (8 + tac.mentalidad * 4) : (-7 + tac.mentalidad * 3);
     var ay = p.slotAy + ky * (ballAy - 34);
 
-    // compactación defensiva hacia el balón
+    // defensive compactness towards the ball
     if (!poss && p.rol !== 'GK') ay += (ballAy - ay) * 0.10;
 
-    // marcaje al hombre: los defensas siguen al atacante rival más
-    // cercano y se colocan entre él y su portería
+    // man-marking: defenders track the nearest opposition attacker
+    // and position themselves between him and their goal
     if (!poss && (p.pos === 'DEF' || p.rol === 'DM')) {
       var marcado = null, md = 9;
       var rivales = this.players[1 - team];
@@ -908,19 +908,19 @@ var Engine = (function () {
       }
       if (marcado) {
         var marcajeF = clamp(0.35 + this.A(p, 'marcaje') * 0.018, 0.35, 0.72);
-        var oAx = axOf(team, marcado.x) - 1.6; // lado portería
+        var oAx = axOf(team, marcado.x) - 1.6; // goal side
         var oAy = ayOf(team, marcado.y);
         ax += (clamp(oAx, 1.5, 103) - ax) * marcajeF;
         ay += (oAy - ay) * marcajeF;
       }
     }
 
-    // los puntas no rebasan al último defensor (disciplina de fuera de juego)
+    // forwards don't go beyond the last defender (offside discipline)
     if ((p.rol === 'ST' || p.rol === 'W' || p.rol === 'AM') && p.rol !== 'GK') {
       ax = Math.min(ax, this.lineaDefRival(team) + 1.5);
     }
 
-    // saques: todo el mundo repliega a su campo en el kickoff; córner puebla el área
+    // restarts: everyone drops into their own half at kick-off; corners fill the box
     if (f && f.tipo === 'saque') {
       if (f.clase === 'kickoff') ax = Math.min(ax, 49);
       if (f.clase === 'corner') {
@@ -935,7 +935,7 @@ var Engine = (function () {
       }
     }
 
-    // ruido posicional (cohesión/colocación)
+    // positional noise (cohesion/positioning)
     ax += Math.sin(this.t * 0.35 + p.wPhase) * p.wAmp;
     ay += Math.cos(this.t * 0.28 + p.wPhase2) * p.wAmp * 1.25;
 
@@ -944,7 +944,7 @@ var Engine = (function () {
     return { x: fxOf(team, ax), y: fyOf(team, ay) };
   };
 
-  // ---------- portero ----------
+  // ---------- goalkeeper ----------
 
   MatchEngine.prototype._moverPortero = function (p, dt) {
     var team = p.team;
@@ -953,7 +953,7 @@ var Engine = (function () {
     var tx, ty, modo = 0.7;
 
     if (p.task && p.task.tipo === 'estirada') {
-      tx = p.task.tx; ty = p.task.ty; modo = 1.6; // la estirada es explosiva
+      tx = p.task.tx; ty = p.task.ty; modo = 1.6; // the dive is explosive
     } else {
       var dBall = dist(b.x, b.y, goalX, 34);
       var salida = !b.owner && !b.plan && dBall < 14 && dist(p.x, p.y, b.x, b.y) < 9 + this.A(p, 'salidas') * 0.3;
@@ -983,7 +983,7 @@ var Engine = (function () {
     p.x = clamp(p.x + p.vx * dt, 0.5, 104.5);
     p.y = clamp(p.y + p.vy * dt, 0.5, 67.5);
 
-    // gasto de energía
+    // energy expenditure
     var v = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
     var carga = 0.16 + (v / (this.vmax(p) + 0.01)) * 0.5;
     if (p.task && (p.task.tipo === 'presionar' || p.task.tipo === 'perseguir')) carga *= 1.22;
@@ -994,7 +994,7 @@ var Engine = (function () {
   };
 
   MatchEngine.prototype._separacion = function (dt) {
-    // que los compañeros no se apelotonen
+    // keep team-mates from bunching up
     for (var team = 0; team < 2; team++) {
       var arr = this.players[team];
       for (var i = 0; i < arr.length; i++) {
@@ -1015,7 +1015,7 @@ var Engine = (function () {
     }
   };
 
-  // ---------- entradas / faltas ----------
+  // ---------- tackles / fouls ----------
 
   MatchEngine.prototype._entradas = function (dt) {
     var carrier = this.jugadorBalon();
@@ -1035,7 +1035,7 @@ var Engine = (function () {
       var pRoba = clamp(0.30 + (atkV - defV) * 0.022, 0.08, 0.68) * this.sf(d) * (0.92 + presionNivel * 0.09);
       var r = Math.random();
       if (r < pRoba) {
-        // roba
+        // wins the ball
         d.st.entradas++;
         d.nota += 0.18;
         carrier.nota -= 0.08;
@@ -1057,7 +1057,7 @@ var Engine = (function () {
         this._falta(d, carrier);
         return;
       }
-      // el portador se marcha: acelerón, defensor superado
+      // carrier gets past: burst of pace, defender beaten
       d.stunned = 0.7;
       carrier.vx *= 1.25; carrier.vy *= 1.25;
       carrier.nota += 0.05;
@@ -1071,7 +1071,7 @@ var Engine = (function () {
     this.stats[infractor.team].faltas++;
     this._ev('falta', { team: infractor.team, jugador: infractor.nombre, sobre: victima.nombre });
 
-    // tarjeta
+    // card
     var pAmarilla = clamp(0.16 + this.A(infractor, 'agresividad') * 0.012, 0.1, 0.42);
     if (Math.random() < 0.012) {
       this._roja(infractor);
@@ -1086,7 +1086,7 @@ var Engine = (function () {
       }
     }
 
-    // penalti si la falta es dentro del área del infractor
+    // penalty if the foul is inside the offender's box
     var axV = axOf(team, victima.x);
     var enArea = axV > CAMPO.w - AREA_X && Math.abs(victima.y - 34) < AREA_Y;
     if (enArea) {
@@ -1104,7 +1104,7 @@ var Engine = (function () {
     this._ev('roja', { team: p.team, jugador: p.nombre, cardId: p.cardId, doble: !!doble });
   };
 
-  // ---------- balón ----------
+  // ---------- ball ----------
 
   MatchEngine.prototype._moverBalon = function (dt) {
     var b = this.ball;
@@ -1131,7 +1131,7 @@ var Engine = (function () {
       b.y = plan.origenY + (plan.destY - plan.origenY) * frac;
       b.z = plan.lofted ? 4 * plan.h * frac * (1 - frac) : 0;
 
-      // intercepción planificada
+      // planned interception
       if (plan.intercept && frac >= plan.intercept.sFrac) {
         var o = this.players[1 - plan.team][plan.intercept.i];
         var pasador = this.players[plan.team][plan.pasadorI];
@@ -1152,7 +1152,7 @@ var Engine = (function () {
       if (frac >= 1) {
         if (plan.tipo === 'tiro') { this._resolverLlegadaTiro(); return; }
         if (plan.tipo === 'centro' || plan.tipo === 'despeje') { this._resolverLlegadaAerea(); return; }
-        // pase: control del receptor
+        // pass: receiver's control
         var receptor = this.players[plan.team][plan.receptorI];
         var pasador2 = this.players[plan.team][plan.pasadorI];
         b.plan = null;
@@ -1167,7 +1167,7 @@ var Engine = (function () {
             b.owner = { team: plan.team, i: receptor.i };
             b.x = receptor.x; b.y = receptor.y;
           } else {
-            // mal control: balón suelto cerca
+            // poor touch: loose ball nearby
             receptor.nota -= 0.05;
             b.vx = (Math.random() * 2 - 1) * 6;
             b.vy = (Math.random() * 2 - 1) * 6;
@@ -1182,13 +1182,13 @@ var Engine = (function () {
       return;
     }
 
-    // balón suelto: física simple
+    // loose ball: simple physics
     b.x += b.vx * dt;
     b.y += b.vy * dt;
     var fr = Math.exp(-1.4 * dt);
     b.vx *= fr; b.vy *= fr;
 
-    // recogida
+    // pick-up
     var self = this;
     for (var team = 0; team < 2; team++) {
       var cerca = this.masCercano(team, b.x, b.y, function (p) { return !p.off && p.stunned <= 0; });
@@ -1206,17 +1206,17 @@ var Engine = (function () {
       }
     }
 
-    // fuera del campo
+    // out of play
     if (b.y < 0 || b.y > CAMPO.h) {
       var saca = 1 - b.lastTouch;
       this._saque('banda', saca, clamp(b.x, 2, 103), b.y < 0 ? 0.8 : CAMPO.h - 0.8);
       return;
     }
     if (b.x < 0 || b.x > CAMPO.w) {
-      // ¿quién defiende esa portería?
-      var defiende = b.x < 0 ? 0 : 1; // el equipo 0 defiende x=0
+      // who defends that goal?
+      var defiende = b.x < 0 ? 0 : 1; // team 0 defends x=0
       if (b.lastTouch === defiende) {
-        // córner para el atacante
+        // corner to the attacking side
         var atacante = 1 - defiende;
         var cy = b.y < 34 ? 0.8 : CAMPO.h - 0.8;
         this._saque('corner', atacante, b.x < 0 ? 0.8 : CAMPO.w - 0.8, cy);
@@ -1226,20 +1226,20 @@ var Engine = (function () {
     }
   };
 
-  // ---------- paso principal ----------
+  // ---------- main step ----------
 
   MatchEngine.prototype.step = function (dt) {
     if (this.terminado || this.pausado) return;
     var b = this.ball;
     this.t += dt;
 
-    // reloj: 2 partes de 47 s = 90'
+    // clock: 2 halves of 47 s = 90'
     var tm = this.t < MEDIA_PARTE
       ? this.t / MEDIA_PARTE * 45
       : 45 + (this.t - MEDIA_PARTE) / MEDIA_PARTE * 45;
     this.minuto = Math.min(90, Math.floor(tm));
 
-    // aviso de clutch al 75'
+    // clutch notice at 75'
     if (!this.clutchAvisado && this.minuto >= 75) {
       this.clutchAvisado = true;
       var self0 = this;
@@ -1250,7 +1250,7 @@ var Engine = (function () {
       });
     }
 
-    // descanso
+    // half-time
     if (this.half === 1 && this.t >= MEDIA_PARTE && this.fase.tipo === 'jugando') {
       this.half = 2;
       this._ev('descanso', { marcador: this.marcador.slice() });
@@ -1259,7 +1259,7 @@ var Engine = (function () {
       return;
     }
 
-    // final
+    // full-time
     if (this.t >= MEDIA_PARTE * 2 && (this.fase.tipo === 'jugando' || this.t > MEDIA_PARTE * 2 + 6)) {
       this.terminado = true;
       this._notasFinales();
@@ -1277,14 +1277,14 @@ var Engine = (function () {
 
     if (f.tipo === 'celebracion') {
       f.timer -= dt;
-      // los jugadores deambulan; el render pone el confeti
+      // players wander; the renderer adds the confetti
       if (f.timer <= 0) this._kickoff(f.kickoffTeam, false);
       return;
     }
 
     if (f.tipo === 'penalti') {
       f.timer -= dt;
-      // colocar al lanzador y al portero
+      // position the taker and the keeper
       var spotX = fxOf(f.team, 94);
       if (f.taker) { this._integrar(f.taker, spotX - (f.team === 0 ? 3 : -3), 34, 0.6, dt); }
       var gk2 = this.players[1 - f.team][0];
@@ -1296,21 +1296,21 @@ var Engine = (function () {
       return;
     }
 
-    // tareas periódicas
+    // periodic tasks
     this.taskTimer -= dt;
     if (this.taskTimer <= 0) {
       this.taskTimer = 0.15;
       this._asignarTareas();
     }
 
-    // decisión del portador
+    // ball-carrier decision
     var carrier = this.jugadorBalon();
     if (carrier && f.tipo === 'jugando') {
       carrier.decCd -= dt;
       if (carrier.decCd <= 0) {
         carrier.decCd = 0.22 + Math.random() * 0.12;
         if (carrier.rol === 'GK') {
-          // el portero distribuye rápido
+          // keeper distributes quickly
           var T = this.teams[carrier.team];
           if (T.tactica.estilo === 'directo' && Math.random() < 0.5) this._despeje(carrier, 50 + Math.random() * 20);
           else {
@@ -1323,7 +1323,7 @@ var Engine = (function () {
       }
     }
 
-    // movimiento
+    // movement
     for (var team = 0; team < 2; team++) {
       var arr = this.players[team];
       for (var i = 0; i < arr.length; i++) {
@@ -1356,13 +1356,13 @@ var Engine = (function () {
     }
     this._separacion(dt);
 
-    // saques: ejecutar cuando el que saca llega
+    // restarts: take it once the taker arrives
     if (f.tipo === 'saque') {
       f.timer -= dt;
       var lejos = f.taker ? dist(f.taker.x, f.taker.y, f.x, f.y) : 0;
       if (f.timer <= 0 && lejos < 2.2) this._ejecutarSaque();
-      else if (f.timer < -4) this._ejecutarSaque(); // por si se atasca
-      // el balón espera en el punto de saque
+      else if (f.timer < -4) this._ejecutarSaque(); // in case it gets stuck
+      // ball waits at the restart spot
       b.x = f.x; b.y = f.y; b.z = 0; b.vx = 0; b.vy = 0;
       this.stats[this.posesionTeam()].posesion += dt;
       return;
@@ -1431,7 +1431,7 @@ var Engine = (function () {
     };
   };
 
-  // partido IA vs IA instantáneo (resto de la jornada)
+  // instant AI vs AI match (rest of the matchday)
   function simRapida(equipoA, equipoB) {
     var motor = new MatchEngine(contextoIA(equipoA, false), contextoIA(equipoB, false), {});
     var r = motor.runAll();

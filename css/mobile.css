@@ -1,25 +1,25 @@
 /* ============================================================
-   ROGUE MANAGER — UI móvil. Todas las reglas cuelgan de
-   html.is-mobile (clase puesta por el detector de index.html),
-   así el escritorio no cambia en absoluto.
+   RELEGATION RUN — mobile UI. Every rule hangs off
+   html.is-mobile (class set by the detector in index.html),
+   so desktop is completely unaffected.
 
-   Diseño: app de una mano — barra de navegación inferior con
-   las pestañas y el botón JUGAR, banquillo/tienda en tiras y
-   rejillas táctiles, modales como bottom-sheets.
+   Design: one-handed app — bottom nav bar with the tabs and
+   the PLAY button, bench/shop as strips and touch grids,
+   modals as bottom sheets.
    ============================================================ */
 
-/* los botones −/+ de negociación solo existen en móvil */
+/* the negotiation −/+ buttons only exist on mobile */
 .nego-step { display: none; }
 #rotate-hint { display: none; }
 
 html.is-mobile body {
-  touch-action: manipulation;            /* sin zoom por doble tap */
-  overscroll-behavior: none;             /* sin pull-to-refresh */
+  touch-action: manipulation;            /* no double-tap zoom */
+  overscroll-behavior: none;             /* no pull-to-refresh */
   -webkit-tap-highlight-color: transparent;
 }
-html.is-mobile #app { height: 100dvh; } /* respeta la barra del navegador */
+html.is-mobile #app { height: 100dvh; } /* respects the browser bar */
 
-/* el hover no existe en táctil: las cartas no deben quedarse "levantadas" */
+/* no hover on touch: cards must not stay "lifted" */
 html.is-mobile .card:hover {
   transform: none;
   box-shadow: 0 5px 0 rgba(0, 0, 0, 0.45);
@@ -27,10 +27,11 @@ html.is-mobile .card:hover {
 html.is-mobile .card.seleccionada { transform: scale(1.04); }
 html.is-mobile .btn:hover { filter: none; transform: none; }
 
-/* ---------- menú ---------- */
+/* ---------- menu ---------- */
 html.is-mobile .menu-content { padding: 24px 20px; width: 100%; }
-html.is-mobile .game-title { font-size: clamp(40px, 14.5vw, 64px); line-height: 1.02; }
-html.is-mobile .game-title span { display: block; } /* ROGUE / MANAGER en dos líneas */
+html.is-mobile .game-title { font-size: clamp(30px, 11vw, 56px); line-height: 1.02; }
+html.is-mobile .game-subtitle { font-size: 12px; letter-spacing: 2px; }
+html.is-mobile .game-title span { display: block; } /* RELEGATION / RUN on two lines */
 html.is-mobile .tagline { font-size: 14.5px; margin: 12px 0 28px; }
 html.is-mobile .menu-buttons { width: 100%; }
 html.is-mobile .menu-buttons .btn { width: 100%; max-width: 340px; }
@@ -42,7 +43,7 @@ html.is-mobile .how-panel {
 }
 html.is-mobile .how-panel .btn { width: 100%; }
 
-/* ---------- gestión: cabecera compacta ---------- */
+/* ---------- management: compact header ---------- */
 html.is-mobile .topbar { padding: 8px 12px; gap: 6px; }
 html.is-mobile .team-badge { font-size: 15px; }
 html.is-mobile .jornada-chip, html.is-mobile .gold-chip, html.is-mobile .salary-chip {
@@ -52,7 +53,7 @@ html.is-mobile .topbar-right { margin-left: auto; }
 html.is-mobile .next-rival { padding: 7px 12px; font-size: 12.5px; }
 html.is-mobile .manage-body { padding: 12px 12px 18px; }
 
-/* ---------- barra inferior (tabs + JUGAR) ---------- */
+/* ---------- bottom bar (tabs + PLAY) ---------- */
 html.is-mobile #mobile-bottom {
   flex-shrink: 0;
   display: flex; flex-direction: column; gap: 8px;
@@ -85,7 +86,7 @@ html.is-mobile .tab.active {
 html.is-mobile .tab .tab-ico { font-size: 18px; line-height: 1; }
 html.is-mobile .tab .tab-txt { font-size: 8.5px; }
 
-/* ---------- alineación ---------- */
+/* ---------- lineup ---------- */
 html.is-mobile .lineup-layout { grid-template-columns: 1fr; gap: 14px; }
 html.is-mobile .pitch-mini { width: 100%; max-width: 420px; margin: 0 auto; }
 html.is-mobile .pitch-slot {
@@ -98,7 +99,7 @@ html.is-mobile .synergy-panel { padding: 10px 12px; }
 html.is-mobile .synergy-row { font-size: 11.5px; padding: 5px 6px; }
 html.is-mobile .hint { font-size: 11.5px; }
 
-/* banquillo: tira horizontal deslizable con el pulgar */
+/* bench: horizontal strip, thumb-scrollable */
 html.is-mobile .bench-list {
   flex-wrap: nowrap; overflow-x: auto;
   gap: 10px; padding: 10px 2px 14px;
@@ -111,12 +112,12 @@ html.is-mobile .bench-item:nth-child(odd) .card,
 html.is-mobile .bench-item:nth-child(even) .card { transform: none; }
 html.is-mobile .bench-item .card.seleccionada { transform: scale(1.04); }
 
-/* botones táctiles más grandes */
+/* bigger touch buttons */
 html.is-mobile .btn-tiny { font-size: 11px; padding: 8px 10px; }
 html.is-mobile .btn-buy { padding: 11px 10px; }
 html.is-mobile #btn-auto-lineup { margin-left: auto; }
 
-/* ---------- tienda / staff: rejilla adaptable ---------- */
+/* ---------- shop / staff: responsive grid ---------- */
 html.is-mobile .shop-cards, html.is-mobile .staff-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
@@ -127,16 +128,16 @@ html.is-mobile .staff-list .card { width: auto; }
 html.is-mobile .staff-slot-empty { width: auto; min-height: 170px; }
 html.is-mobile .shop-header h3 { font-size: 15px; }
 
-/* ---------- liga: tabla legible en pantalla estrecha ---------- */
+/* ---------- league: table readable on narrow screens ---------- */
 html.is-mobile .league-layout { grid-template-columns: 1fr; gap: 18px; }
 html.is-mobile .league-table { font-size: 11.5px; }
 html.is-mobile .league-table th, html.is-mobile .league-table td { padding: 6px 4px; }
-/* fuera GF y GC: quedan #, equipo, PJ, G, E, P y PTS */
+/* hide GF and GA: keeps #, team, P, W, D, L and PTS */
 html.is-mobile .league-table th:nth-child(7), html.is-mobile .league-table td:nth-child(7),
 html.is-mobile .league-table th:nth-child(8), html.is-mobile .league-table td:nth-child(8) { display: none; }
 html.is-mobile .cal-row { font-size: 11.5px; padding: 6px 9px; gap: 7px; }
 
-/* ---------- partido ---------- */
+/* ---------- match ---------- */
 html.is-mobile #screen-match { padding: 8px 10px; }
 html.is-mobile .match-hud { flex-direction: column; gap: 8px; margin-bottom: 8px; }
 html.is-mobile .scoreboard {
@@ -159,17 +160,18 @@ html.is-mobile .match-feed { flex: 1; height: auto; min-height: 80px; font-size:
   }
 }
 
-/* ---------- post-partido / fin de run ---------- */
+/* ---------- post-match / end of run ---------- */
 html.is-mobile .post-content { padding: 20px 14px 40px; }
 html.is-mobile #post-result-title { font-size: 32px; }
 html.is-mobile .post-gold { min-width: 0; width: 100%; }
 html.is-mobile .drop-cards { gap: 12px; }
 html.is-mobile #btn-post-continue { width: 100%; }
 html.is-mobile .end-content { padding: 24px 16px; }
+html.is-mobile .end-awards { grid-template-columns: repeat(2, 1fr); }
 html.is-mobile #end-title { font-size: 38px; }
 html.is-mobile #btn-end-menu { width: 100%; }
 
-/* ---------- modales como bottom-sheet ---------- */
+/* ---------- modals as bottom sheets ---------- */
 html.is-mobile .modal { align-items: flex-end; }
 html.is-mobile .modal-box {
   width: 100%; max-width: none;
@@ -186,7 +188,7 @@ html.is-mobile .nego-log { height: 96px; font-size: 12.5px; }
 html.is-mobile .nego-offer-row { gap: 8px; flex-wrap: wrap; }
 html.is-mobile .nego-offer-row input[type="range"] {
   height: 34px; min-width: 0; flex: 1 1 100%;
-  order: -1;                              /* slider arriba, controles debajo */
+  order: -1;                              /* slider on top, controls below */
 }
 html.is-mobile .nego-step {
   display: block; font-size: 18px; padding: 8px 16px; line-height: 1;
@@ -194,14 +196,14 @@ html.is-mobile .nego-step {
 html.is-mobile #nego-offer-value { flex: 1; text-align: center; }
 html.is-mobile .nego-buttons .btn { flex: 1; padding: 12px 8px; }
 
-/* ---------- toasts por encima de la barra inferior ---------- */
+/* ---------- toasts above the bottom bar ---------- */
 html.is-mobile #toast-container {
   bottom: calc(126px + env(safe-area-inset-bottom));
   width: calc(100% - 24px);
 }
 html.is-mobile .toast { font-size: 12.5px; padding: 9px 14px; text-align: center; }
 
-/* ---------- v2: táctica, ficha, HUD partido ---------- */
+/* ---------- v2: tactics, profile, match HUD ---------- */
 html.is-mobile .tactics-layout { grid-template-columns: 1fr; gap: 18px; }
 html.is-mobile .formation-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
 html.is-mobile .fc-nombre { font-size: 13px; }

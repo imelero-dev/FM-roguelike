@@ -1,5 +1,5 @@
 /* ============================================================
-   ROGUE MANAGER — UI de juego (dark, chunky, estilo Balatro)
+   RELEGATION RUN — game UI (dark, chunky, Balatro-style)
    ============================================================ */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -43,7 +43,7 @@ body {
 
 .pixel-sprite { image-rendering: pixelated; image-rendering: crisp-edges; }
 
-/* ---------- overlay CRT (scanlines + viñeta) ---------- */
+/* ---------- CRT overlay (scanlines + vignette) ---------- */
 #fx-overlay {
   position: fixed; inset: 0; z-index: 200; pointer-events: none;
   background:
@@ -52,7 +52,7 @@ body {
   mix-blend-mode: multiply;
 }
 
-/* ---------- pantallas ---------- */
+/* ---------- screens ---------- */
 .screen {
   display: none;
   flex: 1;
@@ -78,7 +78,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
   letter-spacing: 0.5px;
 }
 
-/* ---------- botones chunky 3D ---------- */
+/* ---------- chunky 3D buttons ---------- */
 .btn {
   background: linear-gradient(180deg, #342d52, var(--panel2));
   color: var(--text);
@@ -114,7 +114,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .btn-sell { border-color: #5a3a3a; }
 .btn-buy { width: 100%; margin-top: 6px; }
 
-/* ---------- menú ---------- */
+/* ---------- menu ---------- */
 #screen-menu { align-items: center; justify-content: center; text-align: center; position: relative; }
 .menu-bg {
   position: absolute; inset: 0;
@@ -141,6 +141,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
   0%, 100% { transform: translateY(0) rotate(-1.2deg) scale(1); }
   50% { transform: translateY(-12px) rotate(1.2deg) scale(1.015); }
 }
+.game-subtitle { color: var(--accent); margin-top: 10px; font-size: 15px; letter-spacing: 3px; text-transform: uppercase; }
 .tagline { color: var(--muted); margin: 16px 0 36px; font-size: 17px; }
 .menu-buttons { display: flex; flex-direction: column; gap: 14px; align-items: center; }
 .meta-stats { margin-top: 42px; color: var(--muted); font-size: 14px; }
@@ -160,7 +161,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .how-panel ul { list-style: none; margin-bottom: 18px; }
 .how-panel li { margin: 9px 0; line-height: 1.45; font-size: 14.5px; }
 
-/* ---------- HUD gestión ---------- */
+/* ---------- management HUD ---------- */
 .topbar {
   display: flex; justify-content: space-between; align-items: center;
   padding: 10px 20px;
@@ -230,7 +231,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .tab-panel { display: none; animation: screenIn 0.25s ease; }
 .tab-panel.active { display: block; }
 
-/* ---------- alineación ---------- */
+/* ---------- lineup ---------- */
 .lineup-layout { display: grid; grid-template-columns: minmax(330px, 460px) 1fr; gap: 22px; }
 @media (max-width: 900px) { .lineup-layout { grid-template-columns: 1fr; } }
 .pitch-mini {
@@ -290,7 +291,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 }
 .hint { color: var(--muted); font-size: 12px; margin-top: 10px; }
 
-/* ---------- sinergias ---------- */
+/* ---------- synergies ---------- */
 .synergy-panel {
   background: var(--panel);
   border: 3px solid var(--border);
@@ -314,7 +315,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .syn-tag { font-weight: 800; white-space: nowrap; font-family: var(--font-display); font-size: 11.5px; }
 .syn-desc { text-align: right; }
 
-/* ---------- cartas ---------- */
+/* ---------- cards ---------- */
 .card {
   position: relative;
   width: 186px;
@@ -357,10 +358,10 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
   font-family: var(--font-display);
   box-shadow: 0 2px 0 rgba(0,0,0,0.4);
 }
-.pos-POR { background: #7a5a12; }
+.pos-GK { background: #7a5a12; }
 .pos-DEF { background: #14508a; }
-.pos-MED { background: #1f7a45; }
-.pos-DEL { background: #8a2434; }
+.pos-MID { background: #1f7a45; }
+.pos-FWD { background: #8a2434; }
 .card-media { font-size: 22px; color: var(--gold); text-shadow: 0 2px 0 rgba(0,0,0,0.5); }
 
 .card-face {
@@ -376,7 +377,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .card-name { font-weight: 800; font-size: 14px; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
 .card-tag { font-size: 11.5px; color: var(--accent); font-weight: 700; margin-bottom: 6px; text-align: center; }
 
-/* barras de stats */
+/* stat bars */
 .card-stats { display: flex; flex-direction: column; gap: 3px; margin-bottom: 6px; }
 .stat-row { display: flex; align-items: center; gap: 5px; }
 .stat-label { font-size: 9px; font-weight: 900; color: var(--muted); width: 24px; font-family: var(--font-display); }
@@ -420,7 +421,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .card.card-mini .card-name { font-size: 12.5px; }
 .card.en-once { outline: 2px solid var(--green); outline-offset: 2px; }
 .card.en-once::after {
-  content: 'EN EL ONCE';
+  content: 'STARTING XI';
   position: absolute; top: -9px; right: 8px;
   font-size: 8.5px; font-weight: 900;
   font-family: var(--font-display);
@@ -445,7 +446,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .staff-card .staff-icon { font-size: 22px; }
 .staff-desc { font-size: 12px; color: var(--text); line-height: 1.35; min-height: 48px; margin: 6px 0; text-align: center; }
 
-/* ---------- banquillo ---------- */
+/* ---------- bench ---------- */
 .bench-list { display: flex; flex-wrap: wrap; gap: 14px; }
 .bench-item { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
 .bench-item:nth-child(odd) .card { transform: rotate(-0.7deg); }
@@ -453,7 +454,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .bench-item .card:hover { transform: translateY(-7px) rotate(-1.4deg) scale(1.02); }
 .bench-item .card.seleccionada { transform: translateY(-7px) scale(1.05); }
 
-/* ---------- tienda ---------- */
+/* ---------- shop ---------- */
 .shop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
 .shop-header h3 { text-transform: uppercase; }
 .shop-cards, .staff-list { display: flex; flex-wrap: wrap; gap: 18px; }
@@ -474,7 +475,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
   color: var(--muted); font-size: 13px;
 }
 
-/* ---------- liga ---------- */
+/* ---------- league ---------- */
 .league-layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 26px; }
 @media (max-width: 900px) { .league-layout { grid-template-columns: 1fr; } }
 .league-layout h3 { text-transform: uppercase; margin-bottom: 4px; }
@@ -510,7 +511,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .res-d { color: var(--red); }
 .res-e { color: var(--muted); }
 
-/* ---------- partido ---------- */
+/* ---------- match ---------- */
 #screen-match { padding: 12px 20px; overflow-y: auto; }
 .match-hud {
   display: flex; justify-content: space-between; align-items: center;
@@ -554,7 +555,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .feed-mia { color: #bde3c5; }
 .feed-rival { color: #e3bdbd; }
 
-/* ---------- post-partido ---------- */
+/* ---------- post-match ---------- */
 #screen-post { overflow-y: auto; align-items: center; }
 .post-content { max-width: 860px; padding: 34px 24px 60px; text-align: center; width: 100%; margin: 0 auto; }
 #post-result-title { font-size: 46px; margin-bottom: 8px; animation: titlePop 0.5s ease; text-shadow: 0 4px 0 rgba(0,0,0,0.5); }
@@ -581,7 +582,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .drop-cards { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: flex-start; }
 .drop-skip { align-self: center; }
 
-/* flip 3D de cartas de recompensa */
+/* 3D flip for reward cards */
 .flip-card { perspective: 900px; }
 .flip-inner {
   position: relative;
@@ -606,9 +607,9 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .flip-card.descartada { opacity: 0.22; filter: grayscale(0.9); pointer-events: none; transition: all 0.4s; }
 .drop-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: center; }
 
-/* ---------- fin de run ---------- */
-#screen-end { align-items: center; justify-content: center; text-align: center; overflow-y: auto; }
-.end-content { padding: 40px; max-width: 620px; width: 100%; margin: auto; }
+/* ---------- end of run ---------- */
+#screen-end { align-items: center; text-align: center; overflow-y: auto; } /* .end-content centres itself with margin:auto, which never clips when it overflows */
+.end-content { padding: 40px; max-width: 760px; width: 100%; margin: auto; }
 #end-title { font-size: 56px; margin-bottom: 10px; animation: titlePop 0.6s ease; }
 .end-win { color: var(--gold); text-shadow: 0 5px 0 #7a5a00, 0 0 50px rgba(255,213,74,0.55); }
 .end-lose { color: var(--red); text-shadow: 0 5px 0 #6e1520; }
@@ -625,7 +626,31 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .end-stat:last-child { border-bottom: none; }
 .end-stat b { color: var(--gold); }
 
-/* ---------- modales ---------- */
+/* season review */
+.continue-info { color: var(--muted); font-size: 13px; margin: -6px 0 4px; }
+.end-form { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-bottom: 22px; }
+.end-form .res {
+  width: 30px; height: 30px; border-radius: 7px; display: grid; place-items: center;
+  font-weight: 800; font-size: 13px; color: #10101a; box-shadow: 0 3px 0 rgba(0,0,0,0.35);
+}
+.end-form .res-V { background: #4ade80; }
+.end-form .res-E { background: #ffd54a; }
+.end-form .res-D { background: #ff6b5c; }
+.end-form .res-boss { outline: 2px solid #fff; outline-offset: 1px; }
+.end-awards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 26px; }
+.end-award {
+  background: var(--panel); border: 3px solid var(--border); border-radius: 12px;
+  box-shadow: 0 5px 0 var(--border-dark); padding: 12px; text-align: center;
+}
+.end-award .ico { font-size: 26px; }
+.end-award .lbl { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+.end-award b { display: block; color: var(--gold); margin-top: 4px; }
+.end-section { text-align: left; margin: 0 0 10px; }
+.end-scroll { overflow-x: auto; margin-bottom: 26px; }
+.end-squad td:nth-child(2) { text-align: left; }
+#end-table { margin-bottom: 26px; }
+
+/* ---------- modals ---------- */
 .modal {
   position: fixed; inset: 0; z-index: 50;
   background: rgba(8,6,14,0.8);
@@ -687,7 +712,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 ::-webkit-scrollbar-thumb:hover { background: #4a4270; }
 
 /* ============================================================
-   V2 — táctica, ficha de jugador, HUD de partido, ratings
+   V2 — tactics, player profile, match HUD, ratings
    ============================================================ */
 
 /* ---------- topbar extra ---------- */
@@ -699,7 +724,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
   color: var(--text);
 }
 
-/* ---------- cabecera del campo ---------- */
+/* ---------- pitch header ---------- */
 .pitch-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .formacion-chip {
   font-family: var(--font-display); font-size: 15px; color: var(--gold);
@@ -715,7 +740,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .coh-bar i { display: block; height: 100%; background: linear-gradient(90deg, #7c5cff, #b09dff); border-radius: 4px; }
 .slot-rol { font-size: 8.5px; color: rgba(255,255,255,0.55); font-weight: 800; }
 
-/* ---------- estado en carta (condición + forma) ---------- */
+/* ---------- card status (fitness + form) ---------- */
 .card-estado { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
 .cond-wrap {
   flex: 1; height: 6px; border-radius: 3px; background: rgba(0,0,0,0.5);
@@ -735,7 +760,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .btn-ficha:hover { background: var(--accent); }
 .sancion-badge { background: #b3241f; left: auto; right: 8px; }
 
-/* ---------- pestaña táctica ---------- */
+/* ---------- tactics tab ---------- */
 .tactics-layout { display: grid; grid-template-columns: 1.35fr 1fr; gap: 24px; }
 @media (max-width: 980px) { .tactics-layout { grid-template-columns: 1fr; } }
 .tactics-layout h3 { text-transform: uppercase; margin-bottom: 10px; }
@@ -775,10 +800,10 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
   border-top: 1px solid rgba(255,255,255,0.3);
 }
 .mp-dot { position: absolute; width: 9px; height: 9px; border-radius: 50%; margin: -4.5px 0 0 -4.5px; border: 1px solid rgba(0,0,0,0.5); }
-.mp-POR { background: #ffd54a; }
+.mp-GK { background: #ffd54a; }
 .mp-DEF { background: #56a0ff; }
-.mp-MED { background: #4ade80; }
-.mp-DEL { background: #ff6b5c; }
+.mp-MID { background: #4ade80; }
+.mp-FWD { background: #ff6b5c; }
 
 .tac-group { margin-bottom: 14px; }
 .tac-group h4 { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 6px; }
@@ -806,7 +831,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
   background: rgba(124,92,255,0.07); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;
 }
 
-/* ---------- ficha de jugador ---------- */
+/* ---------- player profile ---------- */
 .ficha-box { width: min(720px, 94vw); position: relative; }
 .ficha-close { position: absolute; top: 10px; right: 12px; z-index: 2; }
 .ficha-head { display: flex; gap: 14px; align-items: center; margin-bottom: 10px; }
@@ -857,7 +882,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 }
 .ficha-temporada b { color: var(--gold); }
 
-/* ---------- HUD del partido ---------- */
+/* ---------- match HUD ---------- */
 .match-statbar {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
   max-width: 940px; margin: 0 auto 8px; width: 100%;
@@ -900,7 +925,7 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 
 .feed-asist { color: var(--muted); font-size: 11.5px; }
 
-/* ---------- post-partido v2 ---------- */
+/* ---------- post-match v2 ---------- */
 .post-goleadores { margin-bottom: 14px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .gol-chip {
   font-size: 12px; padding: 4px 10px; border-radius: 12px;
@@ -943,5 +968,5 @@ h1, h2, h3, h4, .team-badge, .sb-score, .card-media {
 .nota-media { color: var(--text); }
 .nota-baja { color: var(--red); }
 
-.pichichi-title { margin-top: 20px; }
-.pichichi-table { font-size: 12.5px; }
+.top-scorers-title { margin-top: 20px; }
+.top-scorers-table { font-size: 12.5px; }

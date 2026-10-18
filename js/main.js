@@ -1,6 +1,6 @@
 /* ============================================================
-   MAIN — arranque y flujo de la run:
-   menú → gestión/táctica → partido → post-partido → (fin | siguiente)
+   MAIN — boot and run flow:
+   menu → management/tactics → match → post-match → (end | next)
    ============================================================ */
 
 (function () {
@@ -9,13 +9,15 @@
     State.nuevaRun();
     UI.resetSeleccion();
     UI.renderManage();
-    UI.toast('¡Nueva temporada! Revisa tu once y tu táctica.');
+    UI.toast('New season! Check your starting XI and tactics.');
   }
 
   function jugarPartido() {
     var run = State.run;
     if (!State.onceCompleto()) {
-      UI.toast('Necesitas 11 jugadores alineados', 'error');
+      UI.toast(State.puedeFormacion(run.tactica.formacion)
+        ? 'You need 11 available players in the XI'
+        : 'Not enough players for ' + run.tactica.formacion + ': change formation in 📋 Tactics or sign someone', 'error');
       AudioFX.error();
       return;
     }
@@ -32,7 +34,7 @@
     var ctxRival = Engine.contextoIA(rival, esJefe);
 
     if (run.debuffProxPartido > 0) {
-      UI.toast('⚠️ Vestuario desmotivado por el impago: -' + run.debuffProxPartido + ' a todos los atributos', 'error');
+      UI.toast('⚠️ Dressing room unhappy over unpaid wages: -' + run.debuffProxPartido + ' to all attributes', 'error');
     }
 
     Match.start(ctxJugador, ctxRival, {
@@ -48,7 +50,7 @@
     var gf = resultado.gf, gc = resultado.gc;
     var res = gf > gc ? 'V' : gf < gc ? 'D' : 'E';
 
-    // estadísticas de la run
+    // run stats
     var s = run.stats;
     s.gf += gf; s.gc += gc;
     if (res === 'V') { s.pg++; run.derrotasSeguidas = 0; if (esJefe) s.jefesGanados++; }
@@ -59,7 +61,11 @@
     });
     run.debuffProxPartido = 0;
 
-    // actualización por jugador: temporada, forma, condición, sanciones
+    // existing absences are served this matchday BEFORE applying new ones
+    // (otherwise a red card or 1-matchday injury would never be served)
+    Economy.avanzarLesiones();
+
+    // per-player update: season, form, condition, suspensions
     var mvp = null;
     resultado.jugadores[0].forEach(function (j) {
       var c = State.cartaPorId(j.cardId);
@@ -70,28 +76,32 @@
       c.temporada.ratingTotal += j.nota;
       c.forma = Math.max(-3, Math.min(3, Math.round((c.forma + (j.nota - 6.4) * 0.5) * 10) / 10));
       c.condicion = Math.max(20, Math.round(c.condicion - (100 - j.stamina) * 0.42 - 6));
-      if (j.roja) c.sancion = 1;
+      if (j.roja) {
+        c.sancion = 1;
+        var idx = run.alineacion.indexOf(c.id);
+        if (idx >= 0) run.alineacion[idx] = null;
+      }
       if (!mvp || j.nota > mvp.nota) mvp = j;
     });
 
-    // moral y cohesión táctica
+    // morale and tactical cohesion
     run.moral = Math.max(25, Math.min(95,
       run.moral + (res === 'V' ? (esJefe ? 12 : 8) : res === 'E' ? 1 : -9)));
     var f = run.tactica.formacion;
     var gainCoh = State.tieneStaff('pizarra') ? 36 : 18;
     run.cohesion[f] = Math.min(100, (run.cohesion[f] || 0) + gainCoh);
 
-    // oro
+    // gold
     var rec = Economy.recompensaOro(res, rival, esJefe);
     var obj = Economy.bonusObjetivos(gf, gc, res, mvp ? mvp.nota : 0);
     var oroTotal = rec.oro + obj.oro;
     run.oro += oroTotal;
     s.oroGanado += oroTotal;
 
-    // lesión post-partido
+    // post-match injury
     var lesion = Economy.quizasLesion();
 
-    // cierra la jornada (el resto se juega con el motor real)
+    // close the matchday (other fixtures are played with the real engine)
     var p = State.partidoDelJugador(run.jornada);
     var resJornada = League.cerrarJornada({
       gh: p.esLocal ? gf : gc,
@@ -101,6 +111,10 @@
     var otros = resJornada.filter(function (r) { return !r.jugador; });
 
     var drop = Economy.generarDrop(rival, esJefe, res === 'V');
+
+    // the result is final from here on: reloading now resumes after the match
+    // (the unclaimed reward is forfeited) instead of letting the match be replayed
+    State.guardarPartida('post');
 
     UI.renderPost({
       gf: gf, gc: gc, resultado: res, rival: rival, esJefe: esJefe,
@@ -124,26 +138,39 @@
     var fin = League.comprobarFin();
     if (fin) {
       run.terminada = true;
+      State.borrarPartida();
       State.guardarMeta({ victoria: fin.victoria, puesto: fin.puesto, pg: run.stats.pg });
       UI.renderEnd(fin);
       return;
     }
 
     run.jornada++;
-    Economy.avanzarLesiones();
     Economy.recuperarJornada();
     var pago = Economy.pagarSalarios();
-    if (pago.extra) UI.toast('💎 Mecenas aporta +' + pago.extra + ' 💰');
+    if (pago.extra) UI.toast('💎 Benefactor chips in +' + pago.extra + ' 💰');
     if (pago.impago) {
-      UI.toast('🚨 ¡No pudiste pagar los ' + pago.total + ' 💰 de salarios! El vestuario está desmotivado.', 'error');
+      UI.toast('🚨 You couldn\'t pay ' + pago.total + ' 💰 in wages! The dressing room is unhappy.', 'error');
     } else {
-      UI.toast('Salarios pagados: -' + pago.total + ' 💰');
+      UI.toast('Wages paid: -' + pago.total + ' 💰');
     }
     if (run.derrotasSeguidas === 2) {
-      UI.toast('☠️ Una derrota más y la directiva te despide', 'error');
+      UI.toast('☠️ One more defeat and the board sacks you', 'error');
     }
     UI.resetSeleccion();
     UI.renderManage();
+  }
+
+  function continuarRun() {
+    var phase = State.cargarPartida();
+    if (!phase) {
+      UI.toast('The saved run could not be loaded', 'error');
+      UI.renderMenu();
+      return;
+    }
+    UI.resetSeleccion();
+    if (phase === 'post') continuarTrasPartido();
+    else UI.renderManage();
+    if (!State.run.terminada) UI.toast('Welcome back, gaffer. Matchday ' + State.run.jornada + '.');
   }
 
   function init() {
@@ -151,7 +178,15 @@
 
     document.getElementById('btn-new-run').onclick = function () {
       AudioFX.click();
-      nuevaRun();
+      if (State.resumenPartida()) {
+        UI.confirmar('Start a new run? Your saved run will be lost.', nuevaRun);
+      } else {
+        nuevaRun();
+      }
+    };
+    document.getElementById('btn-continue').onclick = function () {
+      AudioFX.click();
+      continuarRun();
     };
     document.getElementById('btn-how').onclick = function () {
       AudioFX.click();
@@ -163,7 +198,7 @@
     };
     document.getElementById('btn-mute').onclick = function () {
       var m = AudioFX.toggleMute();
-      document.getElementById('btn-mute').textContent = m ? '🔇 Sonido' : '🔊 Sonido';
+      document.getElementById('btn-mute').textContent = m ? '🔇 Sound' : '🔊 Sound';
       if (!m) AudioFX.click();
     };
     document.getElementById('btn-play-match').onclick = function () {
@@ -174,7 +209,7 @@
       var r = Economy.reroll();
       if (!r.ok) { UI.toast(r.msg, 'error'); AudioFX.error(); return; }
       AudioFX.buy();
-      if (r.gratis) UI.toast('🧮 El Economista consigue un reroll gratis');
+      if (r.gratis) UI.toast('🧮 The Economist wangles a free reroll');
       UI.renderManage();
       document.querySelector('.tab[data-tab="tab-shop"]').click();
     };
@@ -183,7 +218,7 @@
       State.autoAlinear();
       UI.resetSeleccion();
       UI.renderManage();
-      UI.toast('🪄 Once colocado automáticamente');
+      UI.toast('🪄 XI picked automatically');
     };
     document.getElementById('btn-end-menu').onclick = function () {
       AudioFX.click();

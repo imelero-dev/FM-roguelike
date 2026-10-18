@@ -1,7 +1,9 @@
 /* ============================================================
-   SYNERGY — sinergias por tag, habilidades pasivas, staff,
-   forma y moral aplicados como bonos de ATRIBUTO. Devuelve
-   los atributos efectivos que consume el motor de partido.
+   SYNERGY — tag synergies, passive skills, staff, form and
+   morale applied as ATTRIBUTE bonuses. Returns the effective
+   attributes consumed by the match engine.
+   Tag keys are data (shared with gen.js); `nombre` is the
+   English display name.
    ============================================================ */
 
 var Synergy = (function () {
@@ -10,39 +12,43 @@ var Synergy = (function () {
   var MENTALES = ['agresividad', 'anticipacion', 'compostura', 'concentracion', 'decisiones', 'desmarque', 'colocacion', 'liderazgo', 'vision', 'sacrificio'];
 
   var SINERGIAS = {
-    'Cantera': {
+    'Academy': {
+      nombre: 'Academy',
       icono: '🌱',
       niveles: [
-        { n: 3, desc: '+1 a TODOS los atributos de los jugadores Cantera' },
-        { n: 5, desc: '+2 a TODOS los atributos de los jugadores Cantera' }
+        { n: 3, desc: '+1 to ALL attributes of Academy players' },
+        { n: 5, desc: '+2 to ALL attributes of Academy players' }
       ],
-      aplicar: function (nivel, ctx) { ctx.porTag['Cantera'] = nivel; }
+      aplicar: function (nivel, ctx) { ctx.porTag['Academy'] = nivel; }
     },
-    'Galáctico': {
+    'Superstar': {
+      nombre: 'Superstar',
       icono: '🌟',
       niveles: [
-        { n: 2, desc: '+1 Remate, Regate, Técnica y Desmarque a todo el equipo' },
-        { n: 4, desc: '+2 Remate, Regate, Técnica y Desmarque a todo el equipo' }
+        { n: 2, desc: '+1 Finishing, Dribbling, Technique and Off the Ball for the whole team' },
+        { n: 4, desc: '+2 Finishing, Dribbling, Technique and Off the Ball for the whole team' }
       ],
       aplicar: function (nivel, ctx) {
         ['remate', 'regate', 'tecnica', 'desmarque'].forEach(function (a) { ctx.equipo[a] = (ctx.equipo[a] || 0) + nivel; });
       }
     },
-    'Físico': {
+    'Physical': {
+      nombre: 'Physical',
       icono: '💪',
       niveles: [
-        { n: 3, desc: '+1 Velocidad, Aceleración, Fuerza y Resistencia a todo el equipo' },
-        { n: 5, desc: '+2 Velocidad, Aceleración, Fuerza y Resistencia a todo el equipo' }
+        { n: 3, desc: '+1 Pace, Acceleration, Strength and Stamina for the whole team' },
+        { n: 5, desc: '+2 Pace, Acceleration, Strength and Stamina for the whole team' }
       ],
       aplicar: function (nivel, ctx) {
         ['velocidad', 'aceleracion', 'fuerza', 'resistencia'].forEach(function (a) { ctx.equipo[a] = (ctx.equipo[a] || 0) + nivel; });
       }
     },
-    'Técnico': {
+    'Technical': {
+      nombre: 'Technical',
       icono: '🎩',
       niveles: [
-        { n: 3, desc: '+1 Pase, Primer toque, Visión y Técnica a todo el equipo' },
-        { n: 5, desc: '+2 Pase, Primer toque, Visión y Técnica a todo el equipo' }
+        { n: 3, desc: '+1 Passing, First Touch, Vision and Technique for the whole team' },
+        { n: 5, desc: '+2 Passing, First Touch, Vision and Technique for the whole team' }
       ],
       aplicar: function (nivel, ctx) {
         ['pase', 'primerToque', 'vision', 'tecnica'].forEach(function (a) { ctx.equipo[a] = (ctx.equipo[a] || 0) + nivel; });
@@ -62,6 +68,7 @@ var Synergy = (function () {
       var activos = def.niveles.filter(function (nv) { return count >= nv.n; });
       return {
         tag: tag,
+        nombre: def.nombre,
         icono: def.icono,
         count: count,
         siguiente: def.niveles.filter(function (nv) { return count < nv.n; })[0] || null,
@@ -70,16 +77,16 @@ var Synergy = (function () {
     });
   }
 
-  // Construye los atributos efectivos del once.
+  // Builds the effective attributes of the starting XI.
   // opts: { esJefe, debuff, moral (20-95), staffKeys }
-  // Devuelve { jugadores: [{card, attrs, habs}], sinergias, castList }
+  // Returns { jugadores: [{card, attrs, habs}], sinergias, castList }
   function aplicar(lineup, staff, opts) {
     opts = opts || {};
     var ctx = { equipo: {}, porTag: {} };
     var sinergias = evaluar(lineup);
     sinergias.forEach(function (s) {
       if (!s.activos.length) return;
-      var nivel = s.activos.length; // 1 o 2 según umbral alcanzado
+      var nivel = s.activos.length; // 1 or 2 depending on threshold reached
       SINERGIAS[s.tag].aplicar(nivel, ctx);
     });
 
@@ -91,7 +98,7 @@ var Synergy = (function () {
       ctx.equipo.concentracion = (ctx.equipo.concentracion || 0) + m;
     }
 
-    // habilidades que afectan a todo el equipo + lista de "casts" visuales
+    // team-wide skills + list of visual "casts"
     var castList = [];
     var capitanes = 0;
     lineup.forEach(function (c) {
@@ -123,12 +130,12 @@ var Synergy = (function () {
         if (MENTALES.indexOf(a) >= 0) v += moralBonus;
         eff[a] = v;
       });
-      // habilidades individuales
+      // individual skills
       if (c.habilidades.indexOf('muro') >= 0 && c.pos === 'DEF') {
         eff.marcaje += 2; eff.colocacion += 2; eff.cabeza += 2;
       }
       if (c.habilidades.indexOf('velocista') >= 0) { eff.velocidad += 2; eff.aceleracion += 2; }
-      if (c.habilidades.indexOf('cerrojo') >= 0 && c.pos === 'POR') { eff.reflejos += 2; eff.unoContraUno += 2; }
+      if (c.habilidades.indexOf('cerrojo') >= 0 && c.pos === 'GK') { eff.reflejos += 2; eff.unoContraUno += 2; }
       if (c.habilidades.indexOf('francotirador') >= 0) eff.tirosLejanos += 3;
       if (c.habilidades.indexOf('fajador') >= 0) {
         eff.fuerza += 2; eff.agresividad += 2;

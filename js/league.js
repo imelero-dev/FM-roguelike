@@ -1,6 +1,6 @@
 /* ============================================================
-   LEAGUE — clasificación, jornadas (los partidos IA vs IA se
-   juegan con el motor real), pichichi y condiciones de fin.
+   LEAGUE — table, matchdays (AI vs AI fixtures are played
+   with the real engine), top scorers and end-of-run conditions.
    ============================================================ */
 
 var League = (function () {
@@ -18,12 +18,12 @@ var League = (function () {
 
   function anotarGoleador(nombre, equipoIdx, goles) {
     var run = State.run;
-    if (!run.pichichi[nombre]) run.pichichi[nombre] = { goles: 0, equipo: equipoIdx };
-    run.pichichi[nombre].goles += goles;
+    if (!run.topScorers[nombre]) run.topScorers[nombre] = { goles: 0, equipo: equipoIdx };
+    run.topScorers[nombre].goles += goles;
   }
 
-  // Simula el resto de la jornada con el motor real y registra todo.
-  // resultadoJugador: {gh, ga, goleadores: [{team, nombre}]} — team 0 = jugador
+  // Simulates the rest of the matchday with the real engine and records everything.
+  // resultadoJugador: {gh, ga, goleadores: [{team, nombre}]} — team 0 = player
   function cerrarJornada(resultadoJugador) {
     var run = State.run;
     var ronda = run.calendario[run.jornada - 1];
@@ -46,7 +46,7 @@ var League = (function () {
       resultados.push({ h: par[0], a: par[1], gh: gh, ga: ga, jugador: esDelJugador });
     });
 
-    // goleadores del partido del jugador (team 0 = jugador, 1 = rival)
+    // scorers from the player's match (team 0 = player, 1 = opponent)
     var rivalIdx = p.esLocal ? p.away : p.home;
     (resultadoJugador.goleadores || []).forEach(function (g) {
       anotarGoleador(g.nombre, g.team === 0 ? 0 : rivalIdx, 1);
@@ -54,7 +54,7 @@ var League = (function () {
 
     run.resultados.push(resultados);
 
-    // los rivales mejoran ligeramente con la temporada
+    // opponents improve slightly as the season goes on
     run.equipos.forEach(function (e) {
       if (!e.esJugador && RNG.chance(0.35)) e.rating = Math.min(80, e.rating + 1);
     });
@@ -71,10 +71,10 @@ var League = (function () {
     });
   }
 
-  function pichichi(n) {
+  function topScorers(n) {
     var run = State.run;
-    return Object.keys(run.pichichi).map(function (nombre) {
-      return { nombre: nombre, goles: run.pichichi[nombre].goles, equipo: run.equipos[run.pichichi[nombre].equipo] };
+    return Object.keys(run.topScorers).map(function (nombre) {
+      return { nombre: nombre, goles: run.topScorers[nombre].goles, equipo: run.equipos[run.topScorers[nombre].equipo] };
     }).sort(function (a, b) { return b.goles - a.goles; }).slice(0, n || 6);
   }
 
@@ -86,28 +86,90 @@ var League = (function () {
     return 8;
   }
 
+  // 1 → "1st", 2 → "2nd", ... (display only)
+  function ordinal(n) {
+    var s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
   function comprobarFin() {
     var run = State.run;
     var puesto = puestoJugador();
     if (run.derrotasSeguidas >= 3) {
-      return { victoria: false, razon: 'Tres derrotas consecutivas. La directiva te ha despedido.', puesto: puesto };
+      return { victoria: false, razon: 'Three defeats on the bounce. The board has sacked you.', puesto: puesto };
     }
     if (run.jornada >= 14) {
       if (puesto === 1) {
-        return { victoria: true, razon: '¡CAMPEONES! Has conquistado la liga.', puesto: 1 };
+        return { victoria: true, razon: 'CHAMPIONS! You\'ve won the league.', puesto: 1 };
       }
       var razon = puesto <= 4
-        ? 'Terminaste ' + puesto + 'º. Solo el título valía: la run acaba aquí.'
-        : 'Fuera del top 4 (' + puesto + 'º). Temporada para olvidar.';
+        ? 'You finished ' + ordinal(puesto) + '. Only the title would do: the run ends here.'
+        : 'Outside the top 4 (' + ordinal(puesto) + '). A season to forget.';
       return { victoria: false, razon: razon, puesto: puesto };
     }
     return null;
   }
 
+  // Season review data for the end screen (pure: reads the run, changes nothing)
+  function resumenTemporada() {
+    var run = State.run;
+    var forma = [];
+    run.resultados.forEach(function (jornada, j) {
+      var r = jornada.filter(function (x) { return x.jugador; })[0];
+      if (!r) return;
+      var local = r.h === 0;
+      var gf = local ? r.gh : r.ga, gc = local ? r.ga : r.gh;
+      forma.push({
+        jornada: j + 1, gf: gf, gc: gc,
+        res: gf > gc ? 'V' : gf < gc ? 'D' : 'E',
+        rival: run.equipos[local ? r.a : r.h].nombre,
+        jefe: State.esJefe(j + 1)
+      });
+    });
+
+    var plantilla = run.plantilla.map(function (c) {
+      var t = c.temporada;
+      return {
+        id: c.id, nombre: c.nombre, pos: c.pos, pj: t.pj, goles: t.goles, asistencias: t.asistencias,
+        media: t.pj ? t.ratingTotal / t.pj : 0
+      };
+    });
+    var orden = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
+    plantilla.sort(function (a, b) { return (orden[a.pos] - orden[b.pos]) || (b.pj - a.pj); });
+
+    function mejorPor(campo, minimo) {
+      var best = null;
+      plantilla.forEach(function (j) {
+        if (j.pj >= minimo && j[campo] > 0 && (!best || j[campo] > best[campo])) best = j;
+      });
+      return best;
+    }
+    // counted by name in run.stats, so players sold mid-season still qualify
+    function goleadorTemporada(goles) {
+      var best = null;
+      Object.keys(goles).forEach(function (n) {
+        if (!best || goles[n] > best.goles) best = { nombre: n, goles: goles[n] };
+      });
+      return best;
+    }
+    // player of the season needs a third of the matches played to qualify
+    var minPj = Math.max(1, Math.ceil(forma.length / 3));
+
+    return {
+      forma: forma,
+      plantilla: plantilla,
+      mejor: mejorPor('media', minPj),
+      goleador: goleadorTemporada(run.stats.mejorGoleador),
+      asistente: mejorPor('asistencias', 1),
+      ligaGoleador: topScorers(1)[0] || null
+    };
+  }
+
   return {
+    resumenTemporada: resumenTemporada,
     cerrarJornada: cerrarJornada,
     clasificacion: clasificacion,
-    pichichi: pichichi,
+    topScorers: topScorers,
     puestoJugador: puestoJugador,
     comprobarFin: comprobarFin
   };

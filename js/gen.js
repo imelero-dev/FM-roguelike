@@ -1,7 +1,7 @@
 /* ============================================================
-   GEN — generación procedural: nombres, equipos (con plantilla,
-   formación y táctica propias), cartas de jugador con atributos
-   completos estilo FM, staff y drops.
+   GEN — procedural generation: names, teams (each with its own
+   squad, formation and tactics), player cards with full
+   attributes, staff and drops.
    ============================================================ */
 
 var RNG = {
@@ -42,30 +42,30 @@ var Gen = (function () {
     'Vega Real', 'Lagunilla', 'Roquedal', 'Altosierra'];
   var COLORES = [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71, 0x9b59b6, 0xe67e22, 0x1abc9c, 0xecf0f1, 0xd35400, 0x34495e];
 
-  var TAGS = ['Cantera', 'Galáctico', 'Físico', 'Técnico'];
-  var POSICIONES = ['POR', 'DEF', 'MED', 'DEL'];
+  var TAGS = ['Academy', 'Superstar', 'Physical', 'Technical'];
+  var POSICIONES = ['GK', 'DEF', 'MID', 'FWD'];
 
   var RAREZAS = {
-    comun:      { nombre: 'Común',      color: '#8a919e', habMax: 1, precio: 60,  salario: 4 },
-    rara:       { nombre: 'Rara',       color: '#3b82f6', habMax: 1, precio: 130, salario: 8 },
-    epica:      { nombre: 'Épica',      color: '#a855f7', habMax: 2, precio: 280, salario: 15 },
-    legendaria: { nombre: 'Legendaria', color: '#f59e0b', habMax: 2, precio: 520, salario: 25 }
+    comun:      { nombre: 'Common',    color: '#8a919e', habMax: 1, precio: 60,  salario: 4 },
+    rara:       { nombre: 'Rare',      color: '#3b82f6', habMax: 1, precio: 130, salario: 8 },
+    epica:      { nombre: 'Epic',      color: '#a855f7', habMax: 2, precio: 280, salario: 15 },
+    legendaria: { nombre: 'Legendary', color: '#f59e0b', habMax: 2, precio: 520, salario: 25 }
   };
 
-  // Habilidades pasivas: perks del roguelike sobre el sistema de atributos.
-  // El motor aplica clutch/killer/francotirador/motor en el momento adecuado;
-  // el resto son bonos de atributo al construir el contexto del partido.
+  // Passive skills: roguelike perks layered on the attribute system.
+  // The engine applies clutch/killer/francotirador/motor at the right moment;
+  // the rest are attribute bonuses applied when building the match context.
   var HABILIDADES = {
-    clutch:        { nombre: 'Clutch',        icono: '⏱', desc: '+2 a todos sus atributos a partir del minuto 75' },
-    muro:          { nombre: 'Muro',          icono: '🧱', desc: '+2 Marcaje, Colocación y Cabeza', pos: ['DEF'] },
-    killer:        { nombre: 'Killer',        icono: '🎯', desc: '+3 Remate dentro del área', pos: ['DEL', 'MED'] },
-    motor:         { nombre: 'Motor',         icono: '⚙️', desc: 'Gasta un 30% menos de energía durante el partido' },
-    capitan:       { nombre: 'Capitán',       icono: '🎖', desc: '+1 Compostura y Decisiones a todo el equipo' },
-    velocista:     { nombre: 'Velocista',     icono: '💨', desc: '+2 Velocidad y Aceleración' },
-    cerrojo:       { nombre: 'Cerrojo',       icono: '🔒', desc: '+2 Reflejos y 1 contra 1', pos: ['POR'] },
-    francotirador: { nombre: 'Francotirador', icono: '🏹', desc: '+3 Tiros lejanos y busca el disparo desde fuera', pos: ['DEL', 'MED'] },
-    fajador:       { nombre: 'Fajador',       icono: '🛡', desc: '+2 Fuerza y Agresividad; +1 a todo en partidos jefe' },
-    estrella:      { nombre: 'Estrella',      icono: '⭐', desc: '+1 a todos sus atributos ofensivos', pos: ['DEL', 'MED'] }
+    clutch:        { nombre: 'Clutch',        icono: '⏱', desc: '+2 to all attributes from the 75th minute' },
+    muro:          { nombre: 'Brick Wall',    icono: '🧱', desc: '+2 Marking, Positioning and Heading', pos: ['DEF'] },
+    killer:        { nombre: 'Killer',        icono: '🎯', desc: '+3 Finishing inside the box', pos: ['FWD', 'MID'] },
+    motor:         { nombre: 'Engine',        icono: '⚙️', desc: 'Uses 30% less energy during the match' },
+    capitan:       { nombre: 'Captain',       icono: '🎖', desc: '+1 Composure and Decisions to the whole team' },
+    velocista:     { nombre: 'Speedster',     icono: '💨', desc: '+2 Pace and Acceleration' },
+    cerrojo:       { nombre: 'Shot Stopper',  icono: '🔒', desc: '+2 Reflexes and One on Ones', pos: ['GK'] },
+    francotirador: { nombre: 'Sniper',        icono: '🏹', desc: '+3 Long Shots and shoots from distance more', pos: ['FWD', 'MID'] },
+    fajador:       { nombre: 'Battler',       icono: '🛡', desc: '+2 Strength and Aggression; +1 to all in boss matches' },
+    estrella:      { nombre: 'Star',          icono: '⭐', desc: '+1 to all attacking attributes', pos: ['FWD', 'MID'] }
   };
 
   var idSeq = 1;
@@ -93,9 +93,9 @@ var Gen = (function () {
 
   function tagPara(rareza) {
     if (rareza === 'legendaria' || rareza === 'epica') {
-      return RNG.weighted([{ v: 'Galáctico', w: 4 }, { v: 'Técnico', w: 2 }, { v: 'Físico', w: 2 }, { v: 'Cantera', w: 1 }]);
+      return RNG.weighted([{ v: 'Superstar', w: 4 }, { v: 'Technical', w: 2 }, { v: 'Physical', w: 2 }, { v: 'Academy', w: 1 }]);
     }
-    return RNG.weighted([{ v: 'Cantera', w: 4 }, { v: 'Físico', w: 3 }, { v: 'Técnico', w: 3 }, { v: 'Galáctico', w: 1 }]);
+    return RNG.weighted([{ v: 'Academy', w: 4 }, { v: 'Physical', w: 3 }, { v: 'Technical', w: 3 }, { v: 'Superstar', w: 1 }]);
   }
 
   function cartaJugador(pos, rareza) {
@@ -125,14 +125,14 @@ var Gen = (function () {
   }
 
   var STAFF_DEFS = [
-    { key: 'ojeador',     nombre: 'Ojeador',      icono: '🔭', desc: '+1 opción en cada drop de cartas post-partido', salario: 10, precio: 150 },
-    { key: 'preparador',  nombre: 'Preparador',   icono: '⛑', desc: '+10 de condición recuperada por jornada y lesiones a la mitad', salario: 8,  precio: 120 },
-    { key: 'agente',      nombre: 'Agente',       icono: '🕶', desc: '+30% oro en todas las ventas', salario: 12, precio: 180 },
-    { key: 'mecenas',     nombre: 'Mecenas',      icono: '💎', desc: '+40 de oro extra cada jornada', salario: 0,  precio: 260 },
-    { key: 'pizarra',     nombre: 'Táctico',      icono: '📋', desc: 'La cohesión con cada formación sube el doble y +1 Colocación al once', salario: 14, precio: 220 },
-    { key: 'motivador',   nombre: 'Motivador',    icono: '📣', desc: '+1 Compostura y Concentración al once (doble en partidos jefe)', salario: 10, precio: 170 },
-    { key: 'cazatalentos',nombre: 'Cazatalentos', icono: '🧲', desc: 'La tienda ofrece cartas de mayor rareza', salario: 12, precio: 200 },
-    { key: 'economista',  nombre: 'Economista',   icono: '🧮', desc: '-25% en el pago de salarios y un reroll gratis por jornada', salario: 0,  precio: 190 }
+    { key: 'ojeador',     nombre: 'Scout',        icono: '🔭', desc: '+1 option in every post-match card drop', salario: 10, precio: 150 },
+    { key: 'preparador',  nombre: 'Physio',       icono: '⛑', desc: '+10 condition recovered per matchday and injuries halved', salario: 8,  precio: 120 },
+    { key: 'agente',      nombre: 'Agent',        icono: '🕶', desc: '+30% gold on all sales', salario: 12, precio: 180 },
+    { key: 'mecenas',     nombre: 'Benefactor',   icono: '💎', desc: '+40 extra gold every matchday', salario: 0,  precio: 260 },
+    { key: 'pizarra',     nombre: 'Tactician',    icono: '📋', desc: 'Formation cohesion grows twice as fast and +1 Positioning for the XI', salario: 14, precio: 220 },
+    { key: 'motivador',   nombre: 'Motivator',    icono: '📣', desc: '+1 Composure and Concentration for the XI (double in boss matches)', salario: 10, precio: 170 },
+    { key: 'cazatalentos',nombre: 'Talent Spotter', icono: '🧲', desc: 'The shop offers higher-rarity cards', salario: 12, precio: 200 },
+    { key: 'economista',  nombre: 'Economist',    icono: '🧮', desc: '-25% on wages and one free reroll per matchday', salario: 0,  precio: 190 }
   ];
 
   function cartaStaff(key) {
@@ -150,8 +150,8 @@ var Gen = (function () {
     };
   }
 
-  // ---------- equipos IA con plantilla real ----------
-  // nivel base de atributos (1-20) equivalente a un rating 1-99
+  // ---------- AI teams with real squads ----------
+  // base attribute level (1-20) equivalent to a 1-99 rating
   function nivelDeRating(rating) {
     return Math.max(4, Math.min(18.5, (rating - 8) / 4.9));
   }
@@ -169,8 +169,8 @@ var Gen = (function () {
         habilidades: []
       });
     });
-    // una estrella por equipo: mejora al mejor atacante
-    var atacantes = jugadores.filter(function (j) { return j.pos === 'DEL' || j.pos === 'MED'; });
+    // one star per team: boosts a random attacker
+    var atacantes = jugadores.filter(function (j) { return j.pos === 'FWD' || j.pos === 'MID'; });
     if (atacantes.length) {
       var estrella = RNG.pick(atacantes);
       Object.keys(estrella.attrs).forEach(function (a) {
@@ -196,7 +196,7 @@ var Gen = (function () {
         pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0
       });
     }
-    // un rival fuerte garantizado: el "jefe" natural de la liga
+    // one guaranteed strong rival: the league's natural "boss"
     var fuerte = RNG.int(1, 7);
     equipos[fuerte].rating = Math.max(equipos[fuerte].rating, RNG.int(68, 74));
     equipos.forEach(function (e) {
@@ -210,13 +210,13 @@ var Gen = (function () {
     return equipos;
   }
 
-  // Plantilla inicial: 15 cartas — cubre cualquiera de las 7 formaciones
+  // Starting squad: 15 cards — covers any of the 7 formations
   function plantillaInicial() {
     var plan = [
-      ['POR', 'comun'], ['POR', 'comun'],
+      ['GK', 'comun'], ['GK', 'comun'],
       ['DEF', 'comun'], ['DEF', 'comun'], ['DEF', 'comun'], ['DEF', 'comun'], ['DEF', 'rara'],
-      ['MED', 'comun'], ['MED', 'comun'], ['MED', 'comun'], ['MED', 'rara'], ['MED', 'comun'],
-      ['DEL', 'comun'], ['DEL', 'rara'], ['DEL', 'comun']
+      ['MID', 'comun'], ['MID', 'comun'], ['MID', 'comun'], ['MID', 'rara'], ['MID', 'comun'],
+      ['FWD', 'comun'], ['FWD', 'rara'], ['FWD', 'comun']
     ];
     return plan.map(function (p) { return cartaJugador(p[0], p[1]); });
   }
@@ -250,7 +250,10 @@ var Gen = (function () {
     plantillaIA: plantillaIA,
     nivelDeRating: nivelDeRating,
     rarezaDrop: rarezaDrop,
-    nombreJugador: nombreJugador
+    nombreJugador: nombreJugador,
+    // id counter, persisted with the save so resumed runs never reuse card ids
+    getIdSeq: function () { return idSeq; },
+    setIdSeq: function (n) { idSeq = Math.max(idSeq, n | 0); }
   };
 })();
 
