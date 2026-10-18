@@ -64,7 +64,7 @@ function esperar(ms) { return new Promise(function (r) { setTimeout(r, ms); }); 
     if (r.result.exceptionDetails) problemas.push('EVAL: ' + expr + ' → ' + r.result.exceptionDetails.exception.description);
     return r.result.result && r.result.result.value;
   }
-  // SCREENSHOT_DIR=docs/screenshots saves PNGs of each screen (used for the README)
+  // SCREENSHOT_DIR=<dir> saves PNGs of each screen (optional, for manual review)
   var SHOTS = process.env.SCREENSHOT_DIR;
   async function shot(name) {
     if (!SHOTS) return;

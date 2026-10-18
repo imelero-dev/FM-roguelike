@@ -7,8 +7,7 @@
   "scripts": {
     "start": "python3 -m http.server 8000",
     "test": "node tests/smoke.js 20 && node tests/save.js",
-    "test:browser": "node --experimental-websocket tests/browser-check.js",
-    "screenshots": "SCREENSHOT_DIR=docs/screenshots node --experimental-websocket tests/browser-check.js"
+    "test:browser": "node --experimental-websocket tests/browser-check.js"
   },
   "engines": {
     "node": ">=20"
